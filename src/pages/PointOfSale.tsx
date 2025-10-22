@@ -1,15 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react'; // Added useMemo
 import { supabase } from '../supabaseClient';
 import type { Product, ProductVariant, CartItem, Sale, SaleItem, Customer, PaymentMethod } from '../appTypes';
-// --- FIX: Added Tag to imports ---
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, X, DollarSign, Smartphone, Landmark, Tag } from 'lucide-react';
-// --- END FIX ---
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, X, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; // Added Search icon
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 
 const LOW_STOCK_THRESHOLD = 5;
 
-// The CartItem type now uses ProductVariant, not Product
 type CartItemVariant = ProductVariant & { 
   quantity: number;
   discount_percentage: number; 
@@ -31,6 +28,10 @@ export default function PointOfSale() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0); 
+
+  // --- NEW STATE: Search Term ---
+  const [searchTerm, setSearchTerm] = useState('');
+  // --- END NEW STATE ---
 
 
   async function fetchVariants() {
@@ -92,24 +93,32 @@ export default function PointOfSale() {
   const cartTotal = cart.reduce((total, item) => total + item.final_price * item.quantity, 0);
   const totalDiscountAmount = subTotal - cartTotal;
 
+  // --- NEW: Filtered List Logic (Memoized for performance) ---
+  const filteredVariants = useMemo(() => {
+    if (!searchTerm) return variants;
+
+    const lowerCaseSearch = searchTerm.toLowerCase();
+
+    return variants.filter(variant => 
+        variant.name.toLowerCase().includes(lowerCaseSearch) ||
+        variant.attribute_1?.toLowerCase().includes(lowerCaseSearch) ||
+        variant.attribute_2?.toLowerCase().includes(lowerCaseSearch)
+    );
+  }, [variants, searchTerm]);
+  // --- END NEW LOGIC ---
+
 
   const handleApplyDiscount = () => {
     if (cart.length === 0) return alert('Add items to cart first.');
-
     const discountStr = prompt('Enter Discount Percentage (e.g., 10 for 10%):', cartDiscountPercent.toString());
     if (!discountStr) return; 
-
     const discount = parseFloat(discountStr);
     if (isNaN(discount) || discount < 0 || discount > 100) return alert('Invalid discount percentage. Must be between 0 and 100.');
     
     const newCart = cart.map(item => {
         const itemPrice = item.price;
         const discountedPrice = itemPrice * (1 - discount / 100);
-        return {
-            ...item,
-            discount_percentage: discount,
-            final_price: discountedPrice
-        } as CartItemVariant;
+        return { ...item, discount_percentage: discount, final_price: discountedPrice } as CartItemVariant;
     });
 
     setCartDiscountPercent(discount);
@@ -119,12 +128,10 @@ export default function PointOfSale() {
 
 
   const recordSale = async (paymentMethod: PaymentMethod, customerId: number | null, transactionRef: string | null = null ): Promise<number | null> => {
-    // 1. Create Sale Record
     const saleData: Sale = { total_amount: cartTotal, payment_method: paymentMethod, customer_id: customerId, transaction_reference: transactionRef }; 
     const { data: sale, error: saleError } = await supabase.from('sales').insert(saleData).select('id').single(); 
     if (saleError || !sale) throw new Error(saleError?.message || 'Failed to create sale record'); 
     
-    // 2. Create Sale Items Records
     const saleItemsData: Omit<SaleItem, 'id'>[] = cart.map((item) => ({ 
       sale_id: sale.id, 
       product_id: item.product_id as number,
@@ -136,7 +143,6 @@ export default function PointOfSale() {
     const { error: itemsError } = await supabase.from('sale_items').insert(saleItemsData); 
     if (itemsError) throw new Error(itemsError.message); 
 
-    // 3. Update Stock
     for (const item of cart) { 
       const { error: stockError } = await supabase.rpc('update_stock', { 
         variant_id_to_update: item.id,
@@ -165,20 +171,9 @@ export default function PointOfSale() {
          if (updateError) throw new Error(`Failed to update customer balance: ${updateError.message}`);
       }
       setLastSaleDetails({ 
-        items: currentCart, 
-        total: cartTotal, 
-        paymentMethod: method, 
-        saleId: saleId, 
-        customerName: customerName,
-        subtotal: subTotal, 
-        discountAmount: totalDiscountAmount,
-        discountPercent: cartDiscountPercent,
+        items: currentCart, total: cartTotal, paymentMethod: method, saleId: saleId, customerName: customerName, subtotal: subTotal, discountAmount: totalDiscountAmount, discountPercent: cartDiscountPercent,
       });
-      setShowReceipt(true); 
-      setCart([]);
-      setCartDiscountPercent(0); 
-      setSelectedCustomerId(null); 
-      fetchVariants();
+      setShowReceipt(true); setCart([]); setCartDiscountPercent(0); setSelectedCustomerId(null); fetchVariants();
     } catch (error: any) { alert(`Error completing sale: ${error.message}`); } finally { setIsProcessing(false); }
   };
 
@@ -194,13 +189,28 @@ export default function PointOfSale() {
 
 
   return (
-    <div className="relative grid h-[calc(100vh-9rem)] grid-cols-12 gap-6">
+    <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 h-[calc(100vh-9rem)]">
+      
       {/* LEFT SIDE: Product Grid */}
-      <div className="col-span-7 h-full overflow-y-auto rounded-lg bg-white p-4 shadow">
+      <div className="md:col-span-7 h-full overflow-y-auto rounded-lg bg-white p-4 shadow order-2 md:order-1">
         <h2 className="text-lg font-semibold text-gray-900">Products & Variants</h2>
+        
+        {/* --- NEW: Search Input Field --- */}
+        <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <input
+                type="text"
+                placeholder="Search products by name or attribute..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input-field w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+        </div>
+        {/* --- END NEW --- */}
+        
         {loadingProducts ? ( <p>Loading products...</p> ) : (
-          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {variants.map((variant) => {
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {filteredVariants.map((variant) => { // *** USE FILTERED VARIANTS ***
               const isLowStock = variant.stock_quantity <= LOW_STOCK_THRESHOLD;
               return (
                 <button
@@ -213,7 +223,17 @@ export default function PointOfSale() {
                   `}
                 >
                   {isLowStock && <AlertTriangle className="absolute top-2 right-2 h-4 w-4 text-red-500" />}
-                  <span className="font-semibold text-gray-800">{variant.name}</span> 
+                  {variant.image_url ? (
+                      <img
+                          src={variant.image_url}
+                          alt={variant.name || 'Product'}
+                          className="mb-2 h-16 w-16 rounded object-cover"
+                      />
+                  ) : (
+                      <div className="mb-2 h-16 w-16 rounded bg-gray-100 flex items-center justify-center text-xs text-gray-500">No Image</div>
+                  )}
+                  
+                  <span className="font-semibold text-gray-800 text-sm">{variant.name}</span> 
                   <span className="mt-1 text-sm text-gray-500">{variant.price.toLocaleString()} RWF</span>
                   <span className={`mt-1 text-xs ${isLowStock ? 'font-bold text-red-600' : 'text-blue-600'}`}>
                     (Stock: {variant.stock_quantity})
@@ -226,8 +246,10 @@ export default function PointOfSale() {
       </div>
 
       {/* RIGHT SIDE: Cart */}
-      <div className="col-span-5 flex h-full flex-col rounded-lg bg-white p-4 shadow">
-         <h2 className="flex items-center text-lg font-semibold text-gray-900"><ShoppingCart className="mr-2 h-5 w-5" /> Current Sale</h2><div className="mt-4"><label htmlFor="customer-select" className="block text-sm font-medium text-gray-700">Select Customer</label><div className="mt-1 flex rounded-md shadow-sm"><select id="customer-select" value={selectedCustomerId ?? ''} onChange={(e) => setSelectedCustomerId(e.target.value ? parseInt(e.target.value) : null)} className="input-field flex-1 rounded-none rounded-l-md" disabled={loadingCustomers}><option value="">-- Walk-in / Cash Sale --</option>{loadingCustomers ? (<option disabled>Loading...</option>) : (customers.map((customer) => (<option key={customer.id} value={customer.id}>{customer.name} {customer.phone ? `(${customer.phone})` : ''} - Bal: {customer.credit_balance.toLocaleString()} RWF</option>)))}</select><button type="button" className="relative -ml-px inline-flex items-center space-x-2 rounded-r-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"><UserPlus className="h-5 w-5 text-gray-400" /><span>New</span></button></div></div>
+      <div className="md:col-span-5 flex flex-col rounded-lg bg-white p-4 shadow order-1 md:order-2 md:h-full">
+         <h2 className="flex items-center text-lg font-semibold text-gray-900"><ShoppingCart className="mr-2 h-5 w-5" /> Current Sale</h2>
+         {/* Customer Selector (No changes) */}
+         <div className="mt-4"><label htmlFor="customer-select" className="block text-sm font-medium text-gray-700">Select Customer</label><div className="mt-1 flex rounded-md shadow-sm"><select id="customer-select" value={selectedCustomerId ?? ''} onChange={(e) => setSelectedCustomerId(e.target.value ? parseInt(e.target.value) : null)} className="input-field flex-1 rounded-none rounded-l-md" disabled={loadingCustomers}><option value="">-- Walk-in / Cash Sale --</option>{loadingCustomers ? (<option disabled>Loading...</option>) : (customers.map((customer) => (<option key={customer.id} value={customer.id}>{customer.name} {customer.phone ? `(${customer.phone})` : ''} - Bal: {customer.credit_balance.toLocaleString()} RWF</option>)))}</select><button type="button" className="relative -ml-px inline-flex items-center space-x-2 rounded-r-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"><UserPlus className="h-5 w-5 text-gray-400" /><span>New</span></button></div></div>
         
         {/* Cart Items List */}
         <div className="mt-4 flex-1 overflow-y-auto divide-y divide-gray-200">

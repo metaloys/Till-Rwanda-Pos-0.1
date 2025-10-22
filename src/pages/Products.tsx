@@ -1,10 +1,10 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Product } from '../appTypes';
-import { PlusCircle, Edit, XCircle, Trash2, Package } from 'lucide-react'; // Added Package icon
-import ProductVariantModal from '../components/ProductVariantModal'; // 1. IMPORT THE MODAL
+import type { Product } from '../appTypes'; // Use appTypes.ts for consistency
+import { PlusCircle, Edit, XCircle, Trash2, Package } from 'lucide-react'; 
+import ProductVariantModal from '../components/ProductVariantModal';
 
-const LOW_STOCK_THRESHOLD = 5; // Used for display purposes
+const LOW_STOCK_THRESHOLD = 5; 
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -12,22 +12,20 @@ export default function Products() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  // --- NEW STATE FOR VARIANT MODAL ---
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  // --- END NEW STATE ---
 
   // State for the form (now ONLY for parent product details)
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
-  // Price and Stock are NO LONGER needed here!
 
   // Fetch all parent products
   async function fetchProducts() {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      // Explicitly selecting columns that exist after schema changes
+      .select('id, name, created_at, category, image_url, has_variants')
       .order('name', { ascending: true });
 
     if (error) console.error('Error fetching products:', error.message);
@@ -37,20 +35,15 @@ export default function Products() {
 
   useEffect(() => { setLoading(true); fetchProducts(); }, []);
 
-  // --- NEW: Open Variant Management Modal ---
   const openVariantManagement = (product: Product) => {
     setSelectedProduct(product);
     setShowVariantModal(true);
   };
-  // --- END NEW ---
 
-  // Pre-fill form for editing (only parent fields remain)
   const startEditing = (product: Product) => {
     setEditingProduct(product);
     setName(product.name);
     setCategory(product.category || '');
-    // Reset the rest
-    // setPrice(''); setStock(''); // These fields are removed/disabled
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -59,7 +52,7 @@ export default function Products() {
     setName(''); setCategory('');
   };
 
-  // --- UPDATED: Handle form submission (Add OR Edit Parent Product) ---
+  // Handle form submission (Add OR Edit Parent Product)
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -67,9 +60,7 @@ export default function Products() {
     const productData = {
       name: name,
       category: category || null,
-      // Default to no variants when creating a new parent product
       has_variants: editingProduct ? editingProduct.has_variants : false, 
-      // price and stock are GONE
     };
 
     try {
@@ -81,7 +72,6 @@ export default function Products() {
           .eq('id', editingProduct.id);
         if (error) throw new Error(error.message);
         alert('Product updated successfully!');
-        // --- END EDIT LOGIC ---
       } else {
         // --- ADD LOGIC ---
         const { data: { user } } = await supabase.auth.getUser();
@@ -91,15 +81,13 @@ export default function Products() {
             .from('products')
             .insert(productData)
             .select()
-            .single(); // Get the ID of the new product
+            .single(); 
             
         if (error || !newProduct) throw new Error(error?.message || 'Failed to create product.');
 
         alert('Parent Product added successfully! Please add variants next.');
-        // --- Automatically open variant modal after creation ---
         setSelectedProduct(newProduct);
         setShowVariantModal(true);
-        // --- END AUTO OPEN ---
       }
       cancelEditing();
       fetchProducts();
@@ -109,10 +97,7 @@ export default function Products() {
       setIsProcessing(false);
     }
   };
-  // --- END UPDATED FUNCTION ---
 
-  // Handle adding stock is now more complex. We need to do it in the variant modal.
-  // We'll keep this as a placeholder, but the main logic is now in the modal.
   const handleAddStock = async (product: Product) => {
      alert(`Please use the 'Manage Variants' button to adjust stock for ${product.name}'s specific options.`);
   };
@@ -130,8 +115,6 @@ export default function Products() {
             <div><label htmlFor="name" className="label-style">Product Name</label><input id="name" type="text" required className="input-field" value={name} onChange={(e) => setName(e.target.value)} disabled={isProcessing}/></div>
             <div><label htmlFor="category" className="label-style">Category (Opt)</label><input id="category" type="text" className="input-field" value={category} onChange={(e) => setCategory(e.target.value)} disabled={isProcessing}/></div>
             
-            {/* Note: Price and Stock removed from here */}
-
             <div className="flex items-center space-x-3">
               <button type="submit" className="flex-1 rounded-md bg-blue-600 px-4 py-2 font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50" disabled={isProcessing}>
                  {isProcessing ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Product'}
@@ -179,7 +162,6 @@ export default function Products() {
                             }
                         </td>
                         <td className="td-style space-x-2 whitespace-nowrap">
-                          {/* --- UPDATED ACTION BUTTONS --- */}
                           <button onClick={() => openVariantManagement(product)} disabled={isProcessing} className="action-button bg-purple-100 text-purple-700 hover:bg-purple-200">
                             <Package className="mr-1 h-3 w-3" /> Manage Variants
                           </button>
@@ -197,14 +179,12 @@ export default function Products() {
         </div>
       </div>
 
-      {/* --- ADD THE VARIANT MODAL --- */}
       <ProductVariantModal
           isOpen={showVariantModal}
           onClose={() => {setShowVariantModal(false); setSelectedProduct(null);}}
           product={selectedProduct}
-          onVariantUpdate={fetchProducts} // Refresh parent list after a change
+          onVariantUpdate={fetchProducts}
       />
-      {/* --- END MODAL --- */}
     </div>
   );
 }
