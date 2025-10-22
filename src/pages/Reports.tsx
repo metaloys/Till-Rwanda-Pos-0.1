@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Profile, UserRole } from '../appTypes';
+// FIX: Removed unused Profile, UserRole
 import { BarChart3, RefreshCw, TrendingUp, TrendingDown, Star, Warehouse } from 'lucide-react';
 
 interface ReportsProps {

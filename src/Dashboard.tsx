@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { supabase } from './supabaseClient';
 import type { Profile, UserRole } from './appTypes.ts'; 
 
-// Import our pages
 import Overview from './pages/Overview';
 import Products from './pages/Products';
 import PointOfSale from './pages/PointOfSale';
@@ -49,10 +48,8 @@ export default function Dashboard({ profile }: DashboardProps) {
         return <SalesHistory />;
       case 'expenses': 
         return <ExpenseTracking {...pageProps} />; 
-      // --- FIX: Pass props to Reports ---
       case 'reports': 
         return <Reports {...pageProps} />; 
-      // --- END FIX ---
       case 'credit_aging': 
         return <CreditAgingReport />; 
       case 'products': 
@@ -79,7 +76,6 @@ export default function Dashboard({ profile }: DashboardProps) {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar Navigation */}
       <aside className="flex w-64 flex-col border-r border-gray-200 bg-white p-4">
         <div className="mb-4 px-3">
              <h1 className="text-2xl font-black text-blue-800">Till Rwanda</h1>
@@ -91,7 +87,8 @@ export default function Dashboard({ profile }: DashboardProps) {
         </p>
 
         <nav className="flex-1 space-y-1">
-          {userRole !== 'admin' && <NavLink pageName="pos" label="New Sale (POS)" isPrimary={true} />}
+          {/* FIX: Use isSuperAdmin check */}
+          {!isSuperAdmin && <NavLink pageName="pos" label="New Sale (POS)" isPrimary={true} />}
           
           <hr className="my-2" />
 
@@ -101,7 +98,6 @@ export default function Dashboard({ profile }: DashboardProps) {
 
           <NavLink pageName="overview" label="Shop Overview" isSubItem={isSuperAdmin ? true : false}/>
 
-          {/* Reports Section */}
           <div className="pt-2">
             <h3 className="px-3 text-xs font-semibold uppercase text-gray-500 tracking-wider">Reports</h3>
             <div className="mt-1 space-y-1">
@@ -110,7 +106,6 @@ export default function Dashboard({ profile }: DashboardProps) {
             </div>
           </div>
           
-          {/* Management Section */}
           <div className="pt-2">
              <h3 className="px-3 text-xs font-semibold uppercase text-gray-500 tracking-wider">Management</h3>
               <div className="mt-1 space-y-1">
@@ -126,7 +121,6 @@ export default function Dashboard({ profile }: DashboardProps) {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto">
         <header className="sticky top-0 z-10 bg-white p-6 shadow-md">
           <h2 className="text-xl font-semibold capitalize text-gray-900">

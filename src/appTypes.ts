@@ -5,7 +5,17 @@ export type ProductVariant = { id: number; created_at: string; product_id: numbe
 
 export type CartItem = ProductVariant & { quantity: number; discount_percentage: number; final_price: number; };
 
-export type Sale = { id?: number; created_at?: string; total_amount: number; payment_method: PaymentMethod; customer_id?: number | null; transaction_reference?: string | null; is_returned: boolean; shop_id: string; };
+export type Sale = { 
+  id?: number; 
+  created_at?: string; 
+  total_amount: number; 
+  payment_method: PaymentMethod; 
+  customer_id?: number | null; 
+  transaction_reference?: string | null; 
+  is_returned?: boolean; // <-- FIX: Made optional
+  shop_id: string; 
+};
+
 export type SaleItem = { id?: number; sale_id: number; product_id: number; variant_id: number; quantity: number; price_at_sale: number; discount_percentage: number; shop_id: string; };
 
 export type Customer = { id: number; created_at: string; user_id: string; name: string; phone: string | null; address: string | null; credit_balance: number; credit_limit: number; shop_id: string; };

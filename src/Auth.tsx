@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react'; // FIX: type-only import
 import { supabase } from './supabaseClient';
 import { Store } from 'lucide-react';
 
@@ -7,19 +8,15 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   
-  // --- NEW STATES FOR ONBOARDING ---
   const [isNewUser, setIsNewUser] = useState(false);
   const [shopName, setShopName] = useState('');
-  // --- END NEW STATES ---
 
 
-  // --- NEW: Handle the custom Owner Sign-Up/Onboarding ---
   const handleOwnerSignUp = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-        // 1. Standard Supabase Auth Signup (Creates user and default 'cashier' profile via trigger)
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: email,
             password: password,
@@ -29,20 +26,22 @@ export default function Auth() {
             throw new Error(authError?.message || 'Standard signup failed.');
         }
 
-        // 2. Call secure backend function to finalize onboarding/roles
-        const { data: onboardData, error: onboardError } = await supabase.functions.invoke('onboard-new-shop', {
+        // FIX: Removed unused 'onboardData'
+        const { error: onboardError } = await supabase.functions.invoke('onboard-new-shop', {
             body: JSON.stringify({ userId: authData.user.id, shopName: shopName }),
             headers: { 'Content-Type': 'application/json' },
         });
 
         if (onboardError) {
-             // CRITICAL: If provisioning fails, delete the partially created user for security/cleanup
-             await supabase.auth.admin.deleteUser(authData.user.id);
+             // This line requires the service_role key, which is not available in the client.
+             // We should handle this error more gracefully, e.g., by asking the user to retry.
+             // For now, we'll alert the error.
+             // await supabase.auth.admin.deleteUser(authData.user.id);
+             console.error("Onboarding failed, user was created but not provisioned:", onboardError.message);
              throw new Error(onboardError.message);
         }
 
-        // 3. Success (The app will automatically redirect as the session is active and profile is updated)
-        alert(`Welcome, Owner of ${shopName}! Account provisioned successfully.`);
+        alert(`Welcome, Owner of ${shopName}! Account provisioned successfully. Please check your email to confirm.`);
 
     } catch (error: any) {
         alert(`Signup failed: ${error.message}`);
@@ -50,16 +49,14 @@ export default function Auth() {
         setLoading(false);
     }
   };
-  // --- END NEW FUNCTION ---
 
 
-  // --- UPDATED: Handle Login ---
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email, password: password, });
     if (error) {
-      alert(error.error_description || error.message);
+      alert(error.message); // FIX: Changed from error.error_description
     } 
     setLoading(false);
   };
@@ -84,7 +81,6 @@ export default function Auth() {
           Till Rwanda
         </h1>
         
-        {/* --- MAIN LOGIN FORM --- */}
         {!isNewUser ? (
           <form className="space-y-6" onSubmit={handleLogin}>
             {commonForm}
@@ -101,7 +97,6 @@ export default function Auth() {
             </p>
           </form>
         ) : (
-        /* --- NEW OWNER SIGNUP FORM --- */
           <form className="space-y-6" onSubmit={handleOwnerSignUp}>
             <div className="rounded-md bg-yellow-50 p-3 flex items-center space-x-2 border border-yellow-300">
                 <Store className='h-5 w-5 text-yellow-600' />
