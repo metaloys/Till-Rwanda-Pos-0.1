@@ -12,13 +12,14 @@ export type Customer = { id: number; created_at: string; user_id: string; name: 
 export type Expense = { id: number; created_at: string; user_id: string; expense_date: string; description: string; category: string | null; amount: number; receipt_url: string | null; is_recurring: boolean; recurrence_interval: string | null; next_due_date: string | null; };
 export type CreditPayment = { id: number; created_at: string; customer_id: number; payment_date: string; amount: number; payment_method: string; recorded_by: string; };
 
-// ** NEW TYPES FOR STAFF MANAGEMENT (MUST HAVE EXPORT) **
-export type UserRole = 'owner' | 'manager' | 'cashier'; // <-- This is the definitive fix
+export type UserRole = 'owner' | 'manager' | 'cashier';
 
+// ** UPDATED: Profile now includes shop_id **
 export type Profile = {
   id: string; 
   created_at: string;
   full_name: string | null;
   shop_name: string | null;
   role: UserRole;
+  shop_id: string | null; // <-- NEW REQUIRED FIELD
 };

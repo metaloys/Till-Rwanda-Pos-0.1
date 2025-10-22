@@ -1,12 +1,19 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Product } from '../appTypes'; // Use appTypes.ts for consistency
-import { PlusCircle, Edit, XCircle, Trash2, Package } from 'lucide-react'; 
+import type { Product, Profile } from '../appTypes'; // Import Profile
+import { PlusCircle, Edit, Trash2, Package } from 'lucide-react';
 import ProductVariantModal from '../components/ProductVariantModal';
 
-const LOW_STOCK_THRESHOLD = 5; 
+// --- NEW: Define props to receive shopId ---
+interface ProductsProps {
+  shopId: string;
+  profile: Profile;
+}
+// --- END NEW ---
 
-export default function Products() {
+const LOW_STOCK_THRESHOLD = 5;
+
+export default function Products({ shopId, profile }: ProductsProps) { // Receive props
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -15,25 +22,22 @@ export default function Products() {
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // State for the form (now ONLY for parent product details)
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
 
-  // Fetch all parent products
+  // Fetch products (RLS handles filtering by shop_id on the backend)
   async function fetchProducts() {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      // Explicitly selecting columns that exist after schema changes
-      .select('id, name, created_at, category, image_url, has_variants')
-      .order('name', { ascending: true });
+      .select('id, name, created_at, category, image_url, has_variants');
 
     if (error) console.error('Error fetching products:', error.message);
-    else if (data) setProducts(data);
+    else if (data) setProducts(data as Product[]);
     setLoading(false);
   }
 
-  useEffect(() => { setLoading(true); fetchProducts(); }, []);
+  useEffect(() => { setLoading(true); fetchProducts(); }, [shopId]); // Re-fetch if shopId changes
 
   const openVariantManagement = (product: Product) => {
     setSelectedProduct(product);
@@ -52,7 +56,7 @@ export default function Products() {
     setName(''); setCategory('');
   };
 
-  // Handle form submission (Add OR Edit Parent Product)
+  // --- UPDATED: Handle form submission to include shop_id ---
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -60,12 +64,12 @@ export default function Products() {
     const productData = {
       name: name,
       category: category || null,
-      has_variants: editingProduct ? editingProduct.has_variants : false, 
+      has_variants: editingProduct ? editingProduct.has_variants : false,
+      shop_id: shopId, // <-- ADD THE SHOP ID HERE
     };
 
     try {
       if (editingProduct) {
-        // --- EDIT LOGIC ---
         const { error } = await supabase
           .from('products')
           .update(productData)
@@ -73,10 +77,6 @@ export default function Products() {
         if (error) throw new Error(error.message);
         alert('Product updated successfully!');
       } else {
-        // --- ADD LOGIC ---
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('You must be logged in.');
-
         const { data: newProduct, error } = await supabase
             .from('products')
             .insert(productData)
@@ -86,7 +86,7 @@ export default function Products() {
         if (error || !newProduct) throw new Error(error?.message || 'Failed to create product.');
 
         alert('Parent Product added successfully! Please add variants next.');
-        setSelectedProduct(newProduct);
+        setSelectedProduct(newProduct as Product);
         setShowVariantModal(true);
       }
       cancelEditing();
@@ -97,15 +97,11 @@ export default function Products() {
       setIsProcessing(false);
     }
   };
-
-  const handleAddStock = async (product: Product) => {
-     alert(`Please use the 'Manage Variants' button to adjust stock for ${product.name}'s specific options.`);
-  };
-
+  // --- END UPDATE ---
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      {/* LEFT COLUMN: Add/Edit Parent Product Form */}
+      {/* Form (No UI changes) */}
       <div className="lg:col-span-1">
         <div className="rounded-lg bg-white p-6 shadow">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -114,22 +110,17 @@ export default function Products() {
           <form onSubmit={handleFormSubmit} className="mt-4 space-y-4">
             <div><label htmlFor="name" className="label-style">Product Name</label><input id="name" type="text" required className="input-field" value={name} onChange={(e) => setName(e.target.value)} disabled={isProcessing}/></div>
             <div><label htmlFor="category" className="label-style">Category (Opt)</label><input id="category" type="text" className="input-field" value={category} onChange={(e) => setCategory(e.target.value)} disabled={isProcessing}/></div>
-            
             <div className="flex items-center space-x-3">
               <button type="submit" className="flex-1 rounded-md bg-blue-600 px-4 py-2 font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50" disabled={isProcessing}>
                  {isProcessing ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Product'}
               </button>
-              {editingProduct && (
-                <button type="button" onClick={cancelEditing} className="rounded-md bg-gray-200 px-4 py-2 font-semibold text-gray-700 shadow-sm hover:bg-gray-300" disabled={isProcessing}>
-                  Cancel
-                </button>
-              )}
+              {editingProduct && (<button type="button" onClick={cancelEditing} className="rounded-md bg-gray-200 px-4 py-2 font-semibold text-gray-700 shadow-sm hover:bg-gray-300" disabled={isProcessing}>Cancel</button>)}
             </div>
           </form>
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Product List */}
+      {/* Product List (No UI changes) */}
       <div className="lg:col-span-2">
         <div className="rounded-lg bg-white p-6 shadow">
           <h2 className="text-lg font-semibold text-gray-900">Your Products</h2>
@@ -140,12 +131,7 @@ export default function Products() {
             {loading && products.length === 0 ? (<p>Loading...</p>) : (
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
-                  <tr>
-                    <th className="th-style">Name</th>
-                    <th className="th-style">Category</th>
-                    <th className="th-style">Variants?</th>
-                    <th className="th-style">Actions</th>
-                  </tr>
+                  <tr><th className="th-style">Name</th><th className="th-style">Category</th><th className="th-style">Variants?</th><th className="th-style">Actions</th></tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {products.length === 0 ? (
@@ -155,19 +141,10 @@ export default function Products() {
                       <tr key={product.id}>
                         <td className="td-style font-medium text-gray-900">{product.name}</td>
                         <td className="td-style text-gray-500">{product.category || 'N/A'}</td>
-                        <td className="td-style">
-                            {product.has_variants ? 
-                              <span className="text-purple-600 font-medium">Yes</span> : 
-                              <span className="text-gray-500">No</span>
-                            }
-                        </td>
+                        <td className="td-style">{product.has_variants ? <span className="text-purple-600 font-medium">Yes</span> : <span className="text-gray-500">No</span>}</td>
                         <td className="td-style space-x-2 whitespace-nowrap">
-                          <button onClick={() => openVariantManagement(product)} disabled={isProcessing} className="action-button bg-purple-100 text-purple-700 hover:bg-purple-200">
-                            <Package className="mr-1 h-3 w-3" /> Manage Variants
-                          </button>
-                          <button onClick={() => startEditing(product)} disabled={isProcessing} className="action-button bg-yellow-100 text-yellow-700 hover:bg-yellow-200">
-                            <Edit className="mr-1 h-3 w-3" /> Edit Details
-                          </button>
+                          <button onClick={() => openVariantManagement(product)} disabled={isProcessing} className="action-button bg-purple-100 text-purple-700 hover:bg-purple-200"><Package className="mr-1 h-3 w-3" /> Manage Variants</button>
+                          <button onClick={() => startEditing(product)} disabled={isProcessing} className="action-button bg-yellow-100 text-yellow-700 hover:bg-yellow-200"><Edit className="mr-1 h-3 w-3" /> Edit Details</button>
                         </td>
                       </tr>
                     ))

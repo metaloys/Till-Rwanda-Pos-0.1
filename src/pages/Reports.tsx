@@ -1,69 +1,89 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Expense } from '../appTypes';
-import { BarChart3, CalendarDays, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react'; // Icons
+import type { Profile, UserRole } from '../appTypes';
+import { BarChart3, CalendarDays, RefreshCw, TrendingUp, TrendingDown, Star, Warehouse } from 'lucide-react'; // Added Warehouse icon
 
-export default function Reports() {
+interface ReportsProps {
+  shopId: string;
+  profile: Profile;
+  userRole: UserRole;
+}
+
+type TopProduct = {
+  variant_id: number;
+  name: string;
+  parent_product_name: string;
+  total_sold: number;
+};
+
+export default function Reports({ shopId }: ReportsProps) {
   const [dailySalesTotal, setDailySalesTotal] = useState<number>(0);
   const [dailySaleCount, setDailySaleCount] = useState<number>(0);
   const [dailyExpensesTotal, setDailyExpensesTotal] = useState<number>(0);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  // --- NEW STATE for Inventory Value ---
+  const [inventoryValue, setInventoryValue] = useState<number>(0);
+  // --- END NEW STATE ---
   const [loading, setLoading] = useState(true);
-  const [reportDate, setReportDate] = useState(new Date()); // Today's date
+  const [reportDate, setReportDate] = useState(new Date());
 
-  // Function to fetch data for a specific date
   async function fetchReportData(date: Date) {
     setLoading(true);
-    setDailySalesTotal(0); // Reset values before fetching
-    setDailySaleCount(0);
-    setDailyExpensesTotal(0);
+    // Reset all states
+    setDailySalesTotal(0); setDailySaleCount(0); setDailyExpensesTotal(0); setTopProducts([]); setInventoryValue(0);
 
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(date);
-    endDate.setHours(23, 59, 59, 999);
+    // Date calculations
+    const startDate = new Date(date); startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(date); endDate.setHours(23, 59, 59, 999);
     const startISO = startDate.toISOString();
     const endISO = endDate.toISOString();
-
-    // --- SALES QUERY FIX ---
-    const { data: salesData, error: salesError, count: salesCount } = await supabase
-      .from('sales')
-      .select('total_amount', { count: 'exact' }) // Only select the columns we need
-      .gte('created_at', startISO)
-      .lte('created_at', endISO)
-      .neq('is_returned', true); // Only count sales that haven't been returned
-    // --- END SALES QUERY FIX ---
-
-    if (salesError) {
-      console.error('Error fetching daily sales:', salesError.message);
-    } else if (salesData) {
-      const total = salesData.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
-      setDailySalesTotal(total);
-      setDailySaleCount(salesCount ?? 0);
-    }
-
-    // --- EXPENSES QUERY ---
     const dateString = date.toISOString().split('T')[0];
 
-    const { data: expensesData, error: expensesError } = await supabase
-      .from('expenses')
-      .select('amount')
-      .eq('expense_date', dateString);
+    // --- FETCH ALL REPORTS IN PARALLEL ---
+    const [salesResult, expensesResult, topProductsResult, inventoryResult] = await Promise.all([
+        // 1. Fetch Sales
+        supabase.from('sales').select('total_amount', { count: 'exact' }).gte('created_at', startISO).lte('created_at', endISO).neq('is_returned', true),
+        // 2. Fetch Expenses
+        supabase.from('expenses').select('amount').eq('expense_date', dateString),
+        // 3. Fetch Top Selling Products
+        supabase.rpc('get_top_selling_products', { p_shop_id: shopId }),
+        // 4. Fetch Inventory Valuation
+        supabase.rpc('get_inventory_valuation', { p_shop_id: shopId })
+    ]);
 
-    if (expensesError) {
-      console.error('Error fetching daily expenses:', expensesError.message);
-    } else if (expensesData) {
-      const total = expensesData.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    // Process Sales
+    if (salesResult.data) {
+      const total = salesResult.data.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+      setDailySalesTotal(total); setDailySaleCount(salesResult.count ?? 0);
+    }
+
+    // Process Expenses
+    if (expensesResult.data) {
+      const total = expensesResult.data.reduce((sum, expense) => sum + (expense.amount || 0), 0);
       setDailyExpensesTotal(total);
     }
-    // --- END EXPENSES QUERY ---
+    
+    // Process Top Products
+    if (topProductsResult.data) {
+        setTopProducts(topProductsResult.data);
+    }
+
+    // Process Inventory Value
+    if (inventoryResult.data) {
+        setInventoryValue(inventoryResult.data);
+    }
+    
+    if (salesResult.error || expensesResult.error || topProductsResult.error || inventoryResult.error) {
+      console.error('Error fetching report data:', salesResult.error?.message || expensesResult.error?.message || topProductsResult.error?.message || inventoryResult.error?.message);
+    }
+    // --- END PARALLEL FETCH ---
 
     setLoading(false);
   }
 
-  // Fetch summary when the component loads or date changes
   useEffect(() => {
     fetchReportData(reportDate);
-  }, [reportDate]);
+  }, [reportDate, shopId]);
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = event.target.value ? new Date(event.target.value) : new Date();
@@ -71,122 +91,86 @@ export default function Reports() {
     setReportDate(new Date(newDate.getTime() + timezoneOffset));
   };
 
-  // --- CALCULATE PROFIT/LOSS ---
   const profitLoss = dailySalesTotal - dailyExpensesTotal;
   const isProfit = profitLoss >= 0;
-  // --- END CALCULATION ---
 
   return (
     <div className="space-y-6">
       {/* Date Selector */}
-       <div className="rounded-lg bg-white p-4 shadow mb-6">
-         <div className="flex items-center justify-between gap-4">
-           <label htmlFor="report-date" className="block text-sm font-medium text-gray-700">
-             Report Date:
-           </label>
-           <div className="flex items-center gap-2">
-              <input
-                 id="report-date"
-                 type="date"
-                 value={reportDate.toISOString().split('T')[0]}
-                 onChange={handleDateChange}
-                 className="input-field py-1 text-sm"
-                 disabled={loading}
-              />
-             <button
-               onClick={() => fetchReportData(reportDate)}
-               disabled={loading}
-               className="action-button rounded-md bg-blue-100 py-1 text-blue-700 hover:bg-blue-200"
-               title="Refresh Summary"
-             >
-               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-             </button>
-           </div>
-         </div>
-       </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Total Sales */}
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 rounded-md bg-green-500 p-3">
-                <TrendingUp className="h-6 w-6 text-white" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Total Sales</dt>
-                  <dd>
-                    {loading ? ( <div className="mt-1 h-8 w-24 animate-pulse rounded bg-gray-200"></div> ) : (
-                      <div className="text-2xl font-bold text-gray-900">{dailySalesTotal.toLocaleString()} RWF</div>
-                    )}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 px-5 py-3">
-            <div className="text-sm">
-               {loading ? (<div className="h-4 w-12 animate-pulse rounded bg-gray-200"></div>) : (
-                <span className="font-medium text-gray-700">{dailySaleCount}</span>
-               )}
-              <span className="text-gray-500"> transactions</span>
-            </div>
+      <div className="rounded-lg bg-white p-4 shadow mb-6">
+        <div className="flex items-center justify-between gap-4">
+          <label htmlFor="report-date" className="block text-sm font-medium text-gray-700">Report Date:</label>
+          <div className="flex items-center gap-2">
+            <input id="report-date" type="date" value={reportDate.toISOString().split('T')[0]} onChange={handleDateChange} className="input-field py-1 text-sm" disabled={loading} />
+            <button onClick={() => fetchReportData(reportDate)} disabled={loading} className="action-button rounded-md bg-blue-100 py-1 text-blue-700 hover:bg-blue-200" title="Refresh Summary">
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Total Expenses */}
-        <div className="overflow-hidden rounded-lg bg-white shadow">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Total Sales, Expenses, Profit/Loss cards (no change) */}
+        <div className="overflow-hidden rounded-lg bg-white shadow"><div className="p-5"><div className="flex items-center"><div className="flex-shrink-0 rounded-md bg-green-500 p-3"><TrendingUp className="h-6 w-6 text-white" /></div><div className="ml-5 w-0 flex-1"><dl><dt className="truncate text-sm font-medium text-gray-500">Total Sales</dt><dd>{loading ? ( <div className="mt-1 h-8 w-24 animate-pulse rounded bg-gray-200"></div> ) : (<div className="text-2xl font-bold text-gray-900">{dailySalesTotal.toLocaleString()} RWF</div>)}</dd></dl></div></div></div><div className="bg-gray-50 px-5 py-3"><div className="text-sm">{loading ? (<div className="h-4 w-12 animate-pulse rounded bg-gray-200"></div>) : (<span className="font-medium text-gray-700">{dailySaleCount}</span>)}<span className="text-gray-500"> transactions</span></div></div></div>
+        <div className="overflow-hidden rounded-lg bg-white shadow"><div className="p-5"><div className="flex items-center"><div className="flex-shrink-0 rounded-md bg-red-500 p-3"><TrendingDown className="h-6 w-6 text-white" /></div><div className="ml-5 w-0 flex-1"><dl><dt className="truncate text-sm font-medium text-gray-500">Total Expenses</dt><dd>{loading ? ( <div className="mt-1 h-8 w-24 animate-pulse rounded bg-gray-200"></div> ) : (<div className="text-2xl font-bold text-gray-900">{dailyExpensesTotal.toLocaleString()} RWF</div>)}</dd></dl></div></div></div></div>
+        <div className={`overflow-hidden rounded-lg bg-white shadow ${loading ? '' : isProfit ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}`}><div className="p-5"><div className="flex items-center"><div className={`flex-shrink-0 rounded-md p-3 ${isProfit ? 'bg-green-500' : 'bg-red-500'}`}><BarChart3 className="h-6 w-6 text-white" /></div><div className="ml-5 w-0 flex-1"><dl><dt className="truncate text-sm font-medium text-gray-500">{isProfit ? 'Net Profit' : 'Net Loss'}</dt><dd>{loading ? ( <div className="mt-1 h-8 w-24 animate-pulse rounded bg-gray-200"></div> ) : (<div className={`text-2xl font-bold ${isProfit ? 'text-green-700' : 'text-red-700'}`}>{Math.abs(profitLoss).toLocaleString()} RWF</div>)}</dd></dl></div></div></div><div className="bg-gray-50 px-5 py-3"><div className="text-xs text-gray-500">(Sales - Expenses)</div></div></div>
+
+        {/* --- NEW: Inventory Valuation Card --- */}
+        <div className="overflow-hidden rounded-lg bg-white shadow sm:col-span-2 lg:col-span-1">
            <div className="p-5">
              <div className="flex items-center">
-               <div className="flex-shrink-0 rounded-md bg-red-500 p-3">
-                 <TrendingDown className="h-6 w-6 text-white" />
+               <div className="flex-shrink-0 rounded-md bg-purple-500 p-3">
+                 <Warehouse className="h-6 w-6 text-white" />
                </div>
                <div className="ml-5 w-0 flex-1">
                  <dl>
-                   <dt className="truncate text-sm font-medium text-gray-500">Total Expenses</dt>
+                   <dt className="truncate text-sm font-medium text-gray-500">Total Inventory Value</dt>
                    <dd>
-                     {loading ? ( <div className="mt-1 h-8 w-24 animate-pulse rounded bg-gray-200"></div> ) : (
-                       <div className="text-2xl font-bold text-gray-900">{dailyExpensesTotal.toLocaleString()} RWF</div>
+                     {loading ? ( <div className="mt-1 h-8 w-32 animate-pulse rounded bg-gray-200"></div> ) : (
+                       <div className="text-2xl font-bold text-gray-900">{inventoryValue.toLocaleString()} RWF</div>
                      )}
                    </dd>
                  </dl>
                </div>
              </div>
            </div>
-         </div>
+        </div>
+        {/* --- END NEW CARD --- */}
 
+      </div>
 
-        {/* Profit / Loss */}
-        <div className={`overflow-hidden rounded-lg bg-white shadow ${loading ? '' : isProfit ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'}`}>
-           <div className="p-5">
-             <div className="flex items-center">
-               <div className={`flex-shrink-0 rounded-md p-3 ${isProfit ? 'bg-green-500' : 'bg-red-500'}`}>
-                 <BarChart3 className="h-6 w-6 text-white" />
-               </div>
-               <div className="ml-5 w-0 flex-1">
-                 <dl>
-                   <dt className="truncate text-sm font-medium text-gray-500">
-                     {isProfit ? 'Net Profit' : 'Net Loss'}
-                   </dt>
-                   <dd>
-                     {loading ? ( <div className="mt-1 h-8 w-24 animate-pulse rounded bg-gray-200"></div> ) : (
-                       <div className={`text-2xl font-bold ${isProfit ? 'text-green-700' : 'text-red-700'}`}>
-                         {Math.abs(profitLoss).toLocaleString()} RWF
-                       </div>
-                     )}
-                   </dd>
-                 </dl>
-               </div>
-             </div>
-           </div>
-           <div className="bg-gray-50 px-5 py-3">
-             <div className="text-xs text-gray-500">
-               (Total Sales - Total Expenses)
-             </div>
-           </div>
-         </div>
+      {/* Top Selling Products Report */}
+      <div className="rounded-lg bg-white p-6 shadow">
+        <h2 className="flex items-center text-lg font-semibold text-gray-900 border-b pb-3">
+            <Star className="mr-2 h-5 w-5 text-yellow-500" />
+            Top Selling Products (All Time)
+        </h2>
+        <div className="mt-4 flow-root">
+            {loading && topProducts.length === 0 ? (
+                <p className="py-4 text-center text-gray-500">Calculating top sellers...</p>
+            ) : topProducts.length === 0 ? (
+                <p className="py-4 text-center text-gray-500">No sales data available to generate this report.</p>
+            ) : (
+                <ul className="divide-y divide-gray-200">
+                    {topProducts.map((product, index) => (
+                        <li key={product.variant_id} className="flex items-center justify-between py-3">
+                            <div className="flex items-center space-x-4">
+                                <span className="text-lg font-bold text-gray-400">{index + 1}</span>
+                                <div>
+                                    <p className="font-medium text-gray-900">{product.parent_product_name}</p>
+                                    <p className="text-sm text-gray-500">{product.name}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-lg font-semibold text-blue-600">{product.total_sold}</p>
+                                <p className="text-xs text-gray-500">Units Sold</p>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import type { Session } from '@supabase/supabase-js';
-import type { Profile } from './appTypes.ts'; // Adding the .ts extension back to the import path here
+import type { Profile } from './appTypes.ts';
 import Auth from './Auth';
 import Dashboard from './Dashboard';
 
@@ -15,7 +15,9 @@ function App() {
     setIsLoadingProfile(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      // --- FIX: Select all the fields we need ---
+      .select('id, full_name, shop_name, role, is_super_admin, shop_id')
+      // --- END FIX ---
       .eq('id', userId)
       .single();
 
@@ -24,14 +26,11 @@ function App() {
       setProfile(null);
     } else if (data) {
       setProfile(data as Profile);
-      // Log added for diagnostic check
-      // console.log("PROFILE LOADED: Role is", data.role); 
     }
     setIsLoadingProfile(false);
   };
 
   useEffect(() => {
-    // 1. Handle session change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
@@ -42,7 +41,6 @@ function App() {
       }
     });
 
-    // 2. Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
@@ -55,7 +53,6 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- Render logic ---
   if (!session) {
     return <Auth />;
   }
@@ -68,10 +65,13 @@ function App() {
     );
   }
   
-  if (!profile) {
+  // This check prevents access for users whose profile/shop link is broken
+  if (!profile || (!profile.shop_id && !profile.is_super_admin)) {
       return (
           <div className="flex min-h-screen items-center justify-center bg-gray-100">
-              <p className="text-xl text-red-700">Error: Profile not found. Please ensure your profile exists in the Supabase 'profiles' table.</p>
+              <p className="text-xl text-red-700">
+                  Access Error: Profile not linked to a business. Please contact support.
+              </p>
           </div>
       );
   }
