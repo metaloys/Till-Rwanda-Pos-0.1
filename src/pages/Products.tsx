@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
-import type { FormEvent } from 'react'; // Fixed type-only import
+import type { FormEvent } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Product, Profile } from '../appTypes';
-import { Edit, XCircle, Package } from 'lucide-react'; // Cleaned imports
-import ProductVariantModal from '../components/ProductVariantModal';
+import type { Product } from '../appTypes'; // FIX: Removed Profile
+import { Edit, Package } from 'lucide-react'; // FIX: Removed PlusCircle, Trash2, XCircle
 
 interface ProductsProps {
   shopId: string;
-  // Removed unused profile prop
 }
 
 export default function Products({ shopId }: ProductsProps) {

@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Product, ProductVariant, Sale, SaleItem, Customer, PaymentMethod, Profile } from '../appTypes'; // Removed CartItem
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; // Removed X
+// FIX: Removed unused Product and Profile
+import type { ProductVariant, Sale, SaleItem, Customer, PaymentMethod } from '../appTypes';
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 
@@ -11,7 +12,6 @@ type CartItemVariant = ProductVariant & { quantity: number; discount_percentage:
 
 interface PointOfSaleProps {
   shopId: string;
-  // profile and userRole removed as they are not used
 }
 
 export default function PointOfSale({ shopId }: PointOfSaleProps) {
@@ -40,16 +40,7 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
   const cartTotal = cart.reduce((total, item) => total + item.final_price * item.quantity, 0);
   const totalDiscountAmount = subTotal - cartTotal;
 
-  const filteredVariants = useMemo(() => {
-    if (!searchTerm) return variants;
-    const lowerCaseSearch = searchTerm.toLowerCase();
-    return variants.filter(variant =>
-        variant.name?.toLowerCase().includes(lowerCaseSearch) || // Fixed null error
-        variant.attribute_1?.toLowerCase().includes(lowerCaseSearch) ||
-        variant.attribute_2?.toLowerCase().includes(lowerCaseSearch)
-    );
-  }, [variants, searchTerm]);
-
+  const filteredVariants = useMemo(() => { if (!searchTerm) return variants; const lowerCaseSearch = searchTerm.toLowerCase(); return variants.filter(variant => variant.name?.toLowerCase().includes(lowerCaseSearch) || variant.attribute_1?.toLowerCase().includes(lowerCaseSearch) || variant.attribute_2?.toLowerCase().includes(lowerCaseSearch)); }, [variants, searchTerm]);
   const handleApplyDiscount = () => { if (cart.length === 0) return alert('Add items first.'); const discountStr = prompt('Discount %:', cartDiscountPercent.toString()); if (!discountStr) return; const discount = parseFloat(discountStr); if (isNaN(discount) || discount < 0 || discount > 100) return alert('Invalid percentage.'); const newCart = cart.map(item => { const discountedPrice = item.price * (1 - discount / 100); return { ...item, discount_percentage: discount, final_price: discountedPrice } as CartItemVariant; }); setCartDiscountPercent(discount); setCart(newCart); alert(`Discount of ${discount}% applied.`); };
 
   const recordSale = async (paymentMethod: PaymentMethod, customerId: number | null, transactionRef: string | null = null ): Promise<number | null> => {
