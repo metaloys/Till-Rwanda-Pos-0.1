@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { supabase } from '../supabaseClient';
 import type { Product } from '../appTypes'; // FIX: Removed Profile
 import { Edit, Package } from 'lucide-react'; // FIX: Removed PlusCircle, Trash2, XCircle
+import ProductVariantModal from '../components/ProductVariantModal'; // <-- FIX: Added this missing import
 
 interface ProductsProps {
   shopId: string;
