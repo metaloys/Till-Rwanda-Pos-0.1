@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import type { Session } from '@supabase/supabase-js';
-import type { Profile } from './appTypes.ts';
+import type { Profile } from './appTypes.ts'; 
 import Auth from './Auth';
 import Dashboard from './Dashboard';
 
@@ -10,14 +10,11 @@ function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  // Function to fetch the user's profile data
   const fetchProfile = async (userId: string) => {
     setIsLoadingProfile(true);
     const { data, error } = await supabase
       .from('profiles')
-      // --- FIX: Select all the fields we need ---
       .select('id, full_name, shop_name, role, is_super_admin, shop_id')
-      // --- END FIX ---
       .eq('id', userId)
       .single();
 
@@ -25,7 +22,18 @@ function App() {
       console.error('Error fetching profile:', error);
       setProfile(null);
     } else if (data) {
-      setProfile(data as Profile);
+      // --- FIX: Safely cast the data ---
+      const fetchedProfile: Profile = {
+        id: data.id,
+        created_at: '', // Not fetched, provide default
+        full_name: data.full_name,
+        shop_name: data.shop_name,
+        role: data.role,
+        is_super_admin: data.is_super_admin,
+        shop_id: data.shop_id,
+      };
+      setProfile(fetchedProfile);
+      // --- END FIX ---
     }
     setIsLoadingProfile(false);
   };
@@ -65,8 +73,7 @@ function App() {
     );
   }
   
-  // This check prevents access for users whose profile/shop link is broken
-  if (!profile || (!profile.shop_id && !profile.is_super_admin)) {
+  if (!profile || (!profile.shop_id && !profile.is_super_admin)) { 
       return (
           <div className="flex min-h-screen items-center justify-center bg-gray-100">
               <p className="text-xl text-red-700">
