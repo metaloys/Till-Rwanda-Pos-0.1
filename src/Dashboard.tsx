@@ -89,7 +89,6 @@ export default function Dashboard({ profile }: DashboardProps) {
         </p>
 
         <nav className="flex-1 space-y-1">
-          {/* --- FIX: Use the correct check --- */}
           {!isSuperAdmin && <NavLink pageName="pos" label="New Sale (POS)" isPrimary={true} />}
           
           <hr className="my-2" />

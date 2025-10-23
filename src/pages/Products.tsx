@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Product } from '../appTypes';
+import type { Product, UserRole } from '../appTypes';
 import { Edit, Package } from 'lucide-react';
 import ProductVariantModal from '../components/ProductVariantModal';
 
 interface ProductsProps {
   shopId: string;
-  // FIX: Removed unused profile prop
+  userRole: UserRole;
 }
 
 export default function Products({ shopId }: ProductsProps) {
