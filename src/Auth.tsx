@@ -7,27 +7,9 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
   const [isNewUser, setIsNewUser] = useState(false);
   const [shopName, setShopName] = useState('');
-
-  // --- NEW: Handle Forgot Password ---
-  const handlePasswordReset = async () => {
-    const email = prompt("Please enter your email address to reset your password:");
-    if (!email) return; // User cancelled
-
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin, // Sends them back to your app after clicking the email link
-    });
-
-    if (error) {
-      alert(`Error: ${error.message}`);
-    } else {
-      alert('Password reset instructions have been sent to your email.');
-    }
-    setLoading(false);
-  };
-  // --- END NEW ---
 
   const handleOwnerSignUp = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,9 +24,8 @@ export default function Auth() {
         });
 
         if (onboardError) {
-             console.error("Onboarding failed:", onboardError.message);
-             // We can't delete the user from the client-side, but we can log the issue
-             throw new Error(`Account created, but shop setup failed. Please contact support. Error: ${onboardError.message}`);
+             console.error("Onboarding failed, user was created but not provisioned:", onboardError.message);
+             throw new Error(`Account created, but shop setup failed. Error: ${onboardError.message}`);
         }
         alert(`Welcome, Owner of ${shopName}! Please check your email to confirm your account.`);
     } catch (error: any) {
@@ -62,28 +43,46 @@ export default function Auth() {
     setLoading(false);
   };
 
+  const handlePasswordReset = async () => {
+    const email = prompt("Please enter your email to reset your password:");
+    if (!email) return;
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    if (error) { alert(`Error: ${error.message}`); } 
+    else { alert('Password reset instructions sent to your email.'); }
+    setLoading(false);
+  };
+
   const commonForm = (
     <>
-      <div><label htmlFor="email">Email address</label><input id="email" type="email" required className="input-field" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-      <div><label htmlFor="password">Password</label><input id="password" type="password" required className="input-field" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+      <div>
+        <label htmlFor="email">Email address</label>
+        {/* --- FIX: Added autoComplete="off" --- */}
+        <input id="email" type="email" required className="input-field" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+      </div>
+      <div>
+        <label htmlFor="password">Password</label>
+        {/* --- FIX: Added autoComplete="new-password" (a trick to help disable autofill) --- */}
+        <input id="password" type="password" required className="input-field" placeholder="Your password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+      </div>
     </>
   );
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
-        <h1 className="mb-6 text-center text-3xl font-bold text-gray-900">Till Rwanda</h1>
+        <h1 className="mb-6 text-center text-3xl font-bold text-gray-900">
+          Till Rwanda
+        </h1>
         
         {!isNewUser ? (
           <form className="space-y-6" onSubmit={handleLogin}>
             {commonForm}
-            {/* --- ADD FORGOT PASSWORD LINK --- */}
             <div className="text-right text-sm">
                 <button type="button" onClick={handlePasswordReset} className="font-medium text-indigo-600 hover:text-indigo-500">
                     Forgot your password?
                 </button>
             </div>
-            {/* --- END LINK --- */}
             <div className="flex items-center space-x-4">
               <button type="submit" disabled={loading} className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50">
                 {loading ? 'Logging In...' : 'Log In'}
@@ -102,7 +101,7 @@ export default function Auth() {
                 <Store className='h-5 w-5 text-yellow-600' />
                 <p className='text-sm font-medium text-yellow-800'>Registering a New Business Owner Account.</p>
             </div>
-            <div><label htmlFor="shop-name">Business Name</label><input id="shop-name" type="text" required className="input-field" value={shopName} onChange={(e) => setShopName(e.target.value)} /></div>
+            <div><label htmlFor="shop-name">Business Name</label><input id="shop-name" type="text" required className="input-field" placeholder="e.g., Judith's Grocery Store" value={shopName} onChange={(e) => setShopName(e.target.value)} /></div>
             {commonForm}
             <div className="flex items-center space-x-4">
               <button type="submit" disabled={loading || !shopName} className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 disabled:opacity-50">

@@ -73,7 +73,7 @@ export default function Dashboard({ profile }: DashboardProps) {
 
   const handlePageSelect = (page: Page) => {
     setCurrentPage(page);
-    setIsMobileMenuOpen(false); // Close menu on navigation
+    setIsMobileMenuOpen(false);
   };
 
   const NavLink = ({ pageName, label, isPrimary = false, isSubItem = false }: { pageName: Page; label: string; isPrimary?: boolean; isSubItem?: boolean; }) => (
@@ -83,11 +83,12 @@ export default function Dashboard({ profile }: DashboardProps) {
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager';
   const isNotCashier = userRole !== 'cashier';
 
-  // --- Reusable Sidebar Content ---
   const SidebarContent = () => (
     <>
       <div className="mb-4 px-3">
-           <h1 className="text-2xl font-black text-blue-800">Till Rwanda</h1>
+           {/* --- BRANDING UPDATE --- */}
+           <h1 className="text-2xl font-black text-blue-800">TillRwanda PoS</h1>
+           {/* --- END UPDATE --- */}
            <p className="text-xs font-semibold text-gray-500">{shopName}</p>
       </div>
       
@@ -96,9 +97,7 @@ export default function Dashboard({ profile }: DashboardProps) {
       </p>
 
       <nav className="flex-1 space-y-1">
-        {/* --- FIX: Use isSuperAdmin check --- */}
         {!isSuperAdmin && <NavLink pageName="pos" label="New Sale (POS)" isPrimary={true} />}
-        {/* --- END FIX --- */}
         
         <hr className="my-2" />
 
@@ -125,17 +124,21 @@ export default function Dashboard({ profile }: DashboardProps) {
         </div>
       </nav>
       <div className="mt-auto border-t pt-2">
-          <p className="px-3 text-xs text-gray-400">Version 0.2 (Multi-Tenant Ready)</p>
-          <p className="px-3 text-xs text-gray-400">Developed by Invoza Ltd.</p>
+          <p className="px-3 text-xs text-gray-400">
+              Version 0.2
+          </p>
+          {/* --- COPYRIGHT UPDATE --- */}
+          <p className="px-3 text-xs text-gray-400">
+              © 2025 Invoza company Ltd.
+          </p>
+          {/* --- END UPDATE --- */}
         <button onClick={handleLogout} className="w-full rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 mt-2" > Log Out </button>
       </div>
     </>
   );
-  // --- End Reusable Sidebar Content ---
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* --- Responsive Mobile Sidebar (Overlay) --- */}
       <div className={`fixed inset-0 z-40 flex md:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
         <div className="relative flex w-64 max-w-[80vw] flex-col border-r border-gray-200 bg-white p-4">
             <button
@@ -150,14 +153,11 @@ export default function Dashboard({ profile }: DashboardProps) {
         <div onClick={() => setIsMobileMenuOpen(false)} className="flex-1 bg-black/50"></div>
       </div>
 
-      {/* --- Desktop Sidebar (Permanent) --- */}
       <aside className="hidden md:flex w-64 flex-col border-r border-gray-200 bg-white p-4">
         <SidebarContent />
       </aside>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-y-auto">
-        {/* --- Header with Hamburger Menu --- */}
         <header className="sticky top-0 z-10 bg-white p-4 shadow-md md:p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold capitalize text-gray-900">
