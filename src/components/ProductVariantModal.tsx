@@ -92,12 +92,10 @@ export default function ProductVariantModal({
 
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // --- FIX: Add null check for product ---
     if (!product) {
         alert("Error: No product selected.");
         return;
     }
-    // --- END FIX ---
     
     setIsProcessing(true);
     let imageUrlToSave: string | null = currentImageUrl;
@@ -143,7 +141,7 @@ export default function ProductVariantModal({
   };
 
   const handleDeleteVariant = async (variantId: number) => {
-    if (!product || !confirm('Are you sure?')) return;
+    if (!product || !confirm('Are you sure you want to delete this variant? Stock will be lost.')) return;
     setIsProcessing(true);
     try {
       const { error } = await supabase.from('product_variants').delete().eq('id', variantId);
@@ -162,7 +160,10 @@ export default function ProductVariantModal({
     const amountStr = prompt(`Current stock for ${variant.name} is ${variant.stock_quantity}.\n\nHow many units are you ADDING?`);
     if (!amountStr) return;
     const amountToAdd = parseInt(amountStr, 10);
-    if (isNaN(amountToAdd) || amountToAdd <= 0) { alert('Invalid quantity.'); return; }
+    if (isNaN(amountToAdd) || amountToAdd <= 0) {
+      alert('Invalid quantity. Please enter a positive number.');
+      return;
+    }
     setIsProcessing(true);
     try {
       const { error } = await supabase.rpc('update_stock', { variant_id_to_update: variant.id, quantity_change: amountToAdd });
@@ -181,11 +182,14 @@ export default function ProductVariantModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-4xl rounded-lg bg-white p-6 shadow-xl">
+      <div className="relative w-full max-w-4xl rounded-lg bg-white p-4 md:p-6 shadow-xl">
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" title="Close"><X size={20} /></button>
+
         <h2 className="mb-4 text-2xl font-bold text-gray-800">Variants for: {product.name}</h2>
         <p className="mb-6 text-sm text-gray-500">Manage options, prices, and stock for this product.</p>
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* LEFT: Add/Edit Variant Form */}
           <div id="variant-form" className="lg:col-span-1 rounded-lg border border-dashed border-gray-300 p-4">
             <h3 className="mb-3 text-lg font-semibold flex justify-between items-center">
                 {editingVariant ? 'Edit Variant' : 'Add New Variant'}
@@ -212,30 +216,58 @@ export default function ProductVariantModal({
               </button>
             </form>
           </div>
-          <div className="lg:col-span-2 overflow-x-auto">
+
+          {/* RIGHT: Variant List */}
+          <div className="lg:col-span-2">
             <h3 className="mb-3 text-lg font-semibold">Current Variants ({variants.length})</h3>
             {loading ? (<div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-gray-500" /></div>) : 
-             variants.length === 0 ? (<p className="text-gray-500">No variants defined.</p>) : (
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr><th className="th-style">Image</th><th className="th-style">Variant Name</th><th className="th-style">Price</th><th className="th-style">Stock</th><th className="th-style text-right">Actions</th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                        {variants.map((variant) => (
-                            <tr key={variant.id}>
-                                <td className="td-style">{variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-10 w-10 rounded object-cover" /> ) : ( <div className="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-xs text-gray-600">No Img</div> )}</td>
-                                <td className="td-style font-medium">{variant.name || `${variant.attribute_1 || ''} ${variant.attribute_2 || ''}`.trim()}</td>
-                                <td className="td-style">{variant.price.toLocaleString()} RWF</td>
-                                <td className={`td-style font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600' : 'text-gray-900'}`}>{variant.stock_quantity}</td>
-                                <td className="td-style text-right whitespace-nowrap">
-                                    <button onClick={() => handleRestock(variant)} disabled={isProcessing} className="action-button bg-green-100 text-green-700 hover:bg-green-200"><PlusCircle className="h-3 w-3" /> Restock</button>
-                                    <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button bg-yellow-100 text-yellow-700 hover:bg-yellow-200 ml-2"><Edit className="h-3 w-3" /> Edit</button>
-                                    <button onClick={() => handleDeleteVariant(variant.id)} disabled={isProcessing} className="action-button bg-red-100 text-red-700 hover:bg-red-200 ml-2"><Trash2 className="h-3 w-3" /> Delete</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+             variants.length === 0 ? (<p className="text-gray-500">No variants defined. Add one using the form.</p>) : (
+                <>
+                  {/* --- DESKTOP TABLE (Hidden on mobile) --- */}
+                  <div className="hidden md:block flow-root overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr><th className="th-style">Image</th><th className="th-style">Variant Name</th><th className="th-style">Price</th><th className="th-style">Stock</th><th className="th-style text-right">Actions</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                            {variants.map((variant) => (
+                                <tr key={variant.id}>
+                                    <td className="td-style">{variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-10 w-10 rounded object-cover" /> ) : ( <div className="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-xs text-gray-600">No Img</div> )}</td>
+                                    <td className="td-style font-medium">{variant.name || `${variant.attribute_1 || ''} ${variant.attribute_2 || ''}`.trim()}</td>
+                                    <td className="td-style">{variant.price.toLocaleString()} RWF</td>
+                                    <td className={`td-style font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600' : 'text-gray-900'}`}>{variant.stock_quantity}</td>
+                                    <td className="td-style text-right whitespace-nowrap">
+                                        <button onClick={() => handleRestock(variant)} disabled={isProcessing} className="action-button bg-green-100 text-green-700 hover:bg-green-200"><PlusCircle className="h-4 w-4" /></button>
+                                        <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button bg-yellow-100 text-yellow-700 hover:bg-yellow-200 ml-2"><Edit className="h-4 w-4" /></button>
+                                        <button onClick={() => handleDeleteVariant(variant.id)} disabled={isProcessing} className="action-button bg-red-100 text-red-700 hover:bg-red-200 ml-2"><Trash2 className="h-4 w-4" /></button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                  </div>
+
+                  {/* --- MOBILE CARD LIST (Visible on mobile) --- */}
+                  <div className="space-y-4 md:hidden">
+                    {variants.map((variant) => (
+                        <div key={variant.id} className="rounded-lg border bg-white p-4 shadow-sm">
+                            <div className="flex items-start space-x-4">
+                                {variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-16 w-16 rounded object-cover" /> ) : ( <div className="h-16 w-16 rounded bg-gray-200 flex items-center justify-center text-xs text-gray-600">No Img</div> )}
+                                <div className="flex-1">
+                                    <p className="font-bold text-gray-900">{variant.name || `${variant.attribute_1 || ''} ${variant.attribute_2 || ''}`.trim()}</p>
+                                    <p className="text-sm text-gray-700">{variant.price.toLocaleString()} RWF</p>
+                                    <p className={`text-sm font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600' : 'text-gray-900'}`}>Stock: {variant.stock_quantity}</p>
+                                </div>
+                            </div>
+                            <div className="mt-4 grid grid-cols-3 gap-2 border-t pt-3">
+                                <button onClick={() => handleRestock(variant)} disabled={isProcessing} className="action-button justify-center bg-green-100 text-green-700 hover:bg-green-200"><PlusCircle className="mr-1.5 h-4 w-4" /> Restock</button>
+                                <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button justify-center bg-yellow-100 text-yellow-700 hover:bg-yellow-200"><Edit className="mr-1.5 h-4 w-4" /> Edit</button>
+                                <button onClick={() => handleDeleteVariant(variant.id)} disabled={isProcessing} className="action-button justify-center bg-red-100 text-red-700 hover:bg-red-200"><Trash2 className="mr-1.5 h-4 w-4" /> Delete</button>
+                            </div>
+                        </div>
+                    ))}
+                  </div>
+                </>
             )}
           </div>
         </div>
