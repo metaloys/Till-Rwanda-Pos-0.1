@@ -7,7 +7,7 @@ import ProductVariantModal from '../components/ProductVariantModal';
 
 interface ProductsProps {
   shopId: string;
-  userRole: UserRole; // This prop is passed but was not in the interface
+  userRole: UserRole;
   // FIX: Removed unused profile prop
 }
 

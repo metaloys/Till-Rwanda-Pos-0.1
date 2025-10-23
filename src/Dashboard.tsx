@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from './supabaseClient';
 import type { Profile, UserRole } from './appTypes.ts'; 
-import { Menu, X } from 'lucide-react'; // Import menu and close icons
+import { Menu, X } from 'lucide-react'; 
 
 // Import our pages
 import Overview from './pages/Overview';
@@ -23,7 +23,6 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ profile }: DashboardProps) {
-  // --- State for mobile menu ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState<Page>(
@@ -97,8 +96,9 @@ export default function Dashboard({ profile }: DashboardProps) {
       </p>
 
       <nav className="flex-1 space-y-1">
-        {/* --- FIX: Correctly show POS button --- */}
+        {/* --- FIX: Use isSuperAdmin check --- */}
         {!isSuperAdmin && <NavLink pageName="pos" label="New Sale (POS)" isPrimary={true} />}
+        {/* --- END FIX --- */}
         
         <hr className="my-2" />
 
@@ -133,12 +133,10 @@ export default function Dashboard({ profile }: DashboardProps) {
   );
   // --- End Reusable Sidebar Content ---
 
-
   return (
     <div className="flex h-screen bg-gray-100">
       {/* --- Responsive Mobile Sidebar (Overlay) --- */}
       <div className={`fixed inset-0 z-40 flex md:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
-        {/* Sidebar */}
         <div className="relative flex w-64 max-w-[80vw] flex-col border-r border-gray-200 bg-white p-4">
             <button
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -149,16 +147,13 @@ export default function Dashboard({ profile }: DashboardProps) {
             </button>
             <SidebarContent />
         </div>
-        {/* Backdrop */}
         <div onClick={() => setIsMobileMenuOpen(false)} className="flex-1 bg-black/50"></div>
       </div>
-      {/* --- End Mobile Sidebar --- */}
 
       {/* --- Desktop Sidebar (Permanent) --- */}
       <aside className="hidden md:flex w-64 flex-col border-r border-gray-200 bg-white p-4">
         <SidebarContent />
       </aside>
-      {/* --- End Desktop Sidebar --- */}
 
 
       {/* Main Content Area */}
@@ -172,7 +167,6 @@ export default function Dashboard({ profile }: DashboardProps) {
                     { page: 'pos', title: 'Point of Sale'}, { page: 'overview', title: 'Shop Overview'}, { page: 'sales_history', title: 'Sales History'}, { page: 'expenses', title: 'Expense Tracking'}, { page: 'reports', title: 'Daily Summary Report'}, { page: 'credit_aging', title: 'Credit Aging Report'}, { page: 'products', title: 'Product Management'}, { page: 'customers', title: 'Customer Management'}, { page: 'credit', title: 'Credit Payments'}, { page: 'staff_management', title: 'Staff Management'},
                 ].find(p => p.page === currentPage)?.title || currentPage.replace('_', ' ')}
             </h2>
-            {/* Hamburger Button (Mobile Only) */}
             <button
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="p-2 text-gray-600 md:hidden"
@@ -182,7 +176,6 @@ export default function Dashboard({ profile }: DashboardProps) {
             </button>
           </div>
         </header>
-        {/* --- End Header --- */}
         
         <main className="p-4 md:p-6">{renderCurrentPage()}</main>
       </div>
