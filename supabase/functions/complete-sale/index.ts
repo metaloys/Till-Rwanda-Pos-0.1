@@ -1,11 +1,10 @@
 import { createClient } from 'npm:@supabase/supabase-js@^2.0';
 
-// Define the expected request body
 interface SalePayload {
   shop_id: string;
   customer_id: number | null;
   payment_method: string;
-  transaction_ref: string | null; // This is the variable name we receive
+  transaction_ref: string | null;
   discount_percent: number;
   items: Array<{
     variant_id: number;
@@ -19,8 +18,8 @@ type ProductVariant = {
   product_id: number;
   price: number;
   stock_quantity: number;
-  name: string | null; // Variant name e.g., "Small Red"
-  products: { name: string }; // Parent product name e.g., "T-Shirt"
+  name: string | null;
+  products: { name: string };
 };
 
 type CreditCheckResult = {
@@ -52,17 +51,31 @@ Deno.serve(async (req) => {
     }
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // --- CRITICAL: Get the user ID from the JWT for the cashier field ---
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+    let cashierId: string | undefined;
+
+    if (token) {
+        // We use the admin client to verify and decode the JWT
+        const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+        if (userData.user) {
+            cashierId = userData.user.id;
+        } else {
+            console.warn("Could not retrieve user ID from token:", userError?.message);
+        }
+    }
+    // --- END CRITICAL STEP ---
+
+
     // Fetch REAL prices and stock
     const variantIds = items.map(item => item.variant_id);
     const { data: variants, error: variantError } = await supabaseAdmin
       .from('product_variants')
-      .select('id, product_id, price, stock_quantity, name, products( name )') // Fetch parent name
+      .select('id, product_id, price, stock_quantity, name, products( name )')
       .in('id', variantIds);
 
     if (variantError) throw new Error(`DB Error (Variants): ${variantError.message}`);
-    if (!variants || variants.length !== items.length) {
-      throw new Error("One or more products could not be found.");
-    }
+    if (!variants || variants.length !== items.length) { throw new Error("One or more products could not be found."); }
     
     let subtotal = 0;
     let finalSaleItems = [];
@@ -70,9 +83,7 @@ Deno.serve(async (req) => {
     
     for (const item of items) {
       const variant = variants.find(v => v.id === item.variant_id) as ProductVariant;
-      if (variant.stock_quantity < item.quantity) {
-        throw new Error(`Not enough stock for variant ID ${item.variant_id}. Only ${variant.stock_quantity} left.`);
-      }
+      if (variant.stock_quantity < item.quantity) { throw new Error(`Not enough stock for variant ID ${item.variant_id}.`); }
       const itemPrice = variant.price;
       const finalPrice = itemPrice * (1 - discount_percent / 100);
       subtotal += itemPrice * item.quantity;
@@ -87,75 +98,57 @@ Deno.serve(async (req) => {
       });
       
       const fullVariantName = `${variant.products.name} - ${variant.name}`;
-      cartForReceipt.push({
-          name: fullVariantName,
-          price: itemPrice,
-          final_price: finalPrice,
-          quantity: item.quantity
-      });
+      cartForReceipt.push({ name: fullVariantName, price: itemPrice, final_price: finalPrice, quantity: item.quantity });
     }
     
     const totalDiscount = subtotal * (discount_percent / 100);
     const finalTotal = subtotal - totalDiscount;
 
     if (payment_method === 'credit' && customer_id) {
-        const { data: creditCheckData, error } = await supabaseAdmin.rpc('check_and_update_credit', {
-            p_customer_id: customer_id,
-            p_sale_amount: finalTotal
-        });
+        const { data: creditCheckData, error } = await supabaseAdmin.rpc('check_and_update_credit', { p_customer_id: customer_id, p_sale_amount: finalTotal });
         if (error) throw new Error(`Credit check failed: ${error.message}`);
         const result = creditCheckData[0] as CreditCheckResult; 
-        if (!result || !result.success) {
-            throw new Error(result.message || 'Credit check failed or was denied.');
-        }
+        if (!result || !result.success) { throw new Error(result.message || 'Credit check failed or was denied.'); }
     }
 
-    // Create the Sale record
+    // 6. Create the Sale record
     const { data: sale, error: saleError } = await supabaseAdmin
       .from('sales')
       .insert({
           total_amount: finalTotal,
           payment_method: payment_method,
           customer_id: customer_id,
-          // --- FIX: Use the correct variable name 'transaction_ref' ---
-          transaction_reference: transaction_ref, 
-          // --- END FIX ---
+          transaction_reference: transaction_ref,
           shop_id: shop_id,
           is_returned: false,
+          cashier_id: cashierId, // <--- SAVING THE CASHIER ID
       })
       .select('id')
       .single();
       
     if (saleError || !sale) throw new Error(saleError?.message || 'Failed to create sale record');
 
-    // Link sale_items to the new sale
+    // 7. Link sale_items to the new sale
     const itemsWithSaleId = finalSaleItems.map(item => ({ ...item, sale_id: sale.id }));
     const { error: itemsError } = await supabaseAdmin.from('sale_items').insert(itemsWithSaleId);
     if (itemsError) throw new Error(itemsError.message);
 
-    // Update stock
+    // 8. Update stock
     for (const item of items) {
       const { error: stockError } = await supabaseAdmin.rpc('update_stock', { variant_id_to_update: item.variant_id, quantity_change: -item.quantity });
       if (stockError) console.error(`Stock update error: ${stockError.message}`);
     }
 
-    // EBM SIMULATION
+    // 9. EBM SIMULATION
     console.log("--- EBM INVOICE SIMULATION (RRA VSDC API) ---");
-    const ebmInvoice = {
-      tin: "YOUR_SHOP_TIN_HERE", invoiceNumber: `SALE-${sale.id}`, date: new Date().toISOString(),
-      items: cartForReceipt.map(item => ({ itemCode: item.name, quantity: item.quantity, unitPrice: item.price, total: item.quantity * item.price, taxCode: 'B' })),
-      totalAmount: finalTotal,
-    };
+    const ebmInvoice = { tin: "YOUR_SHOP_TIN_HERE", invoiceNumber: `SALE-${sale.id}`, date: new Date().toISOString(), items: cartForReceipt.map(item => ({ itemCode: item.name, quantity: item.quantity, unitPrice: item.price, total: item.quantity * item.price, taxCode: 'B' })), totalAmount: finalTotal };
     console.log(JSON.stringify(ebmInvoice, null, 2));
     console.log("--- SIMULATION END ---");
 
-    // Return success data to the app
+    // 10. Return success data to the app
     return new Response(JSON.stringify({ 
-        success: true,
-        saleId: sale.id,
-        receiptDetails: {
-            items: cartForReceipt, total: finalTotal, subtotal, discountAmount: totalDiscount, discountPercent: discount_percent, paymentMethod: payment_method, saleId: sale.id,
-        }
+        success: true, saleId: sale.id,
+        receiptDetails: { items: cartForReceipt, total: finalTotal, subtotal, discountAmount: totalDiscount, discountPercent: discount_percent, paymentMethod: payment_method, saleId: sale.id }
     }), { headers: { 'Content-Type': 'application/json', ...corsHeaders }, status: 200 });
 
   } catch (error) {
