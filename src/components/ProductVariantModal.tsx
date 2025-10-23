@@ -1,6 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
-// --- FIX 1 & 2: Corrected type-only imports ---
-import type { FormEvent, ChangeEvent } from 'react'; 
+import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import type { Product, ProductVariant } from '../appTypes';
 import { X, PlusCircle, Trash2, Loader2, Upload, Edit, XCircle } from 'lucide-react';
@@ -94,7 +92,7 @@ export default function ProductVariantModal({
 
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // --- FIX 3: Add null check for product ---
+    // --- FIX: Add null check for product ---
     if (!product) {
         alert("Error: No product selected.");
         return;
