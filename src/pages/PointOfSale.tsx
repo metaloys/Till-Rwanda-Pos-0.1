@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-// --- FIX: Removed unused Sale and SaleItem types ---
-import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole } from '../appTypes';
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
+import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole, Sale, SaleItem } from '../appTypes';
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, X, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 
@@ -14,13 +13,12 @@ type CartItemVariant = ProductVariant & {
   final_price: number;
 };
 
+// --- FIX: Removed unused profile and userRole props ---
 interface PointOfSaleProps {
   shopId: string;
-  profile: Profile;
-  userRole: UserRole;
 }
 
-export default function PointOfSale({ shopId, profile, userRole }: PointOfSaleProps) {
+export default function PointOfSale({ shopId }: PointOfSaleProps) {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
