@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from './supabaseClient';
 import type { Profile, UserRole } from './appTypes.ts'; 
-import { Menu, X } from 'lucide-react'; 
+import { Menu, X, Building } from 'lucide-react';
 
 // Import our pages
 import Overview from './pages/Overview';
@@ -34,7 +34,10 @@ export default function Dashboard({ profile }: DashboardProps) {
   const shopName = profile.shop_name || 'Your Shop';
   const isSuperAdmin = profile.is_super_admin; 
 
-  const handleLogout = async () => { await supabase.auth.signOut(); };
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.reload(); 
+  };
 
   const renderCurrentPage = () => {
     const pageProps = { 
@@ -44,30 +47,18 @@ export default function Dashboard({ profile }: DashboardProps) {
     };
 
     switch (currentPage) {
-      case 'admin_dashboard':
-        return <SuperAdminDashboard />;
-      case 'overview': 
-        return <Overview />; 
-      case 'sales_history': 
-        return <SalesHistory {...pageProps} />;
-      case 'expenses': 
-        return <ExpenseTracking {...pageProps} />; 
-      case 'reports': 
-        return <Reports {...pageProps} />; 
-      case 'credit_aging': 
-        return <CreditAgingReport {...pageProps} />;
-      case 'products': 
-        return <Products {...pageProps} />; 
-      case 'customers': 
-        return <Customers {...pageProps} />; 
-      case 'credit': 
-        return <CreditManagement {...pageProps} />; 
-      case 'pos': 
-        return <PointOfSale {...pageProps} />; 
-      case 'staff_management': 
-        return <StaffManagement {...pageProps} />; 
-      default: 
-        return isSuperAdmin ? <SuperAdminDashboard /> : <Overview />;
+      case 'admin_dashboard': return <SuperAdminDashboard />;
+      case 'overview': return <Overview />; 
+      case 'sales_history': return <SalesHistory {...pageProps} />;
+      case 'expenses': return <ExpenseTracking {...pageProps} />; 
+      case 'reports': return <Reports {...pageProps} />; 
+      case 'credit_aging': return <CreditAgingReport {...pageProps} />;
+      case 'products': return <Products {...pageProps} />; 
+      case 'customers': return <Customers {...pageProps} />; 
+      case 'credit': return <CreditManagement {...pageProps} />; 
+      case 'pos': return <PointOfSale {...pageProps} />; 
+      case 'staff_management': return <StaffManagement {...pageProps} />; 
+      default: return isSuperAdmin ? <SuperAdminDashboard /> : <Overview />;
     }
   };
 
@@ -77,7 +68,8 @@ export default function Dashboard({ profile }: DashboardProps) {
   };
 
   const NavLink = ({ pageName, label, isPrimary = false, isSubItem = false }: { pageName: Page; label: string; isPrimary?: boolean; isSubItem?: boolean; }) => (
-    <button onClick={() => handlePageSelect(pageName)} className={` w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${ isPrimary ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-500' : currentPage === pageName ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' } ${isSubItem ? 'pl-6' : ''} `} > {label} </button>
+    // --- Use default indigo colors ---
+    <button onClick={() => handlePageSelect(pageName)} className={` w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${ isPrimary ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700' : currentPage === pageName ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' } ${isSubItem ? 'pl-6' : ''} `} > {label} </button>
   );
 
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager';
@@ -85,30 +77,23 @@ export default function Dashboard({ profile }: DashboardProps) {
 
   const SidebarContent = () => (
     <>
-      <div className="mb-4 px-3">
-           {/* --- BRANDING UPDATE --- */}
-           <h1 className="text-2xl font-black text-blue-800">TillRwanda PoS</h1>
-           {/* --- END UPDATE --- */}
-           <p className="text-xs font-semibold text-gray-500">{shopName}</p>
+      <div className="mb-4 px-3 flex items-center space-x-2">
+           <Building className="h-7 w-7 text-indigo-600" />
+           <h1 className="text-2xl font-black text-slate-900">TillRwanda PoS</h1>
       </div>
       
-      <p className={`mb-4 px-3 text-xs font-semibold capitalize ${isSuperAdmin ? 'text-purple-600' : 'text-blue-600'}`}>
+      <p className={`mb-4 px-3 text-xs font-semibold capitalize ${isSuperAdmin ? 'text-purple-600' : 'text-indigo-600'}`}>
           {isSuperAdmin ? 'PLATFORM ADMIN' : `Role: ${userRole}`} | {profile.full_name}
       </p>
 
       <nav className="flex-1 space-y-1">
         {!isSuperAdmin && <NavLink pageName="pos" label="New Sale (POS)" isPrimary={true} />}
-        
         <hr className="my-2" />
-
-        {isSuperAdmin && (
-            <NavLink pageName="admin_dashboard" label="Platform Dashboard" isSubItem={false}/>
-        )}
-
+        {isSuperAdmin && (<NavLink pageName="admin_dashboard" label="Platform Dashboard" isSubItem={false}/>)}
         <NavLink pageName="overview" label="Shop Overview" isSubItem={isSuperAdmin ? true : false}/>
 
         <div className="pt-2">
-          <h3 className="px-3 text-xs font-semibold uppercase text-gray-500 tracking-wider">Reports</h3>
+          <h3 className="px-3 text-xs font-semibold uppercase text-slate-500 tracking-wider">Reports</h3>
           <div className="mt-1 space-y-1">
             <NavLink pageName="sales_history" label="Sales History" isSubItem={true}/>
             {isOwnerOrManager && (<><NavLink pageName="reports" label="Daily Summary" isSubItem={true}/><NavLink pageName="expenses" label="Expense Tracking" isSubItem={true}/><NavLink pageName="credit_aging" label="Credit Aging" isSubItem={true}/></>)}
@@ -116,36 +101,26 @@ export default function Dashboard({ profile }: DashboardProps) {
         </div>
         
         <div className="pt-2">
-           <h3 className="px-3 text-xs font-semibold uppercase text-gray-500 tracking-wider">Management</h3>
+           <h3 className="px-3 text-xs font-semibold uppercase text-slate-500 tracking-wider">Management</h3>
             <div className="mt-1 space-y-1">
               {isNotCashier && (<><NavLink pageName="products" label="Products" isSubItem={true}/><NavLink pageName="customers" label="Customers" isSubItem={true}/><NavLink pageName="credit" label="Credit Payments" isSubItem={true}/></>)}
               {userRole === 'owner' && (<NavLink pageName="staff_management" label="Staff Management" isSubItem={true}/>)}
            </div>
         </div>
       </nav>
-      <div className="mt-auto border-t pt-2">
-          <p className="px-3 text-xs text-gray-400">
-              Version 0.2
-          </p>
-          {/* --- COPYRIGHT UPDATE --- */}
-          <p className="px-3 text-xs text-gray-400">
-              © 2025 Invoza company Ltd.
-          </p>
-          {/* --- END UPDATE --- */}
-        <button onClick={handleLogout} className="w-full rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 mt-2" > Log Out </button>
+      <div className="mt-auto border-t border-slate-200 pt-2">
+          <p className="px-3 text-xs text-slate-400">Version 0.2</p>
+          <p className="px-3 text-xs text-slate-400">© 2025 Invoza company Ltd.</p>
+        <button onClick={handleLogout} className="w-full rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 mt-2" > Log Out </button>
       </div>
     </>
   );
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-slate-50">
       <div className={`fixed inset-0 z-40 flex md:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
-        <div className="relative flex w-64 max-w-[80vw] flex-col border-r border-gray-200 bg-white p-4">
-            <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="absolute top-2 right-2 p-2 text-gray-500 md:hidden"
-                aria-label="Close menu"
-            >
+        <div className="relative flex w-64 max-w-[80vw] flex-col border-r border-slate-200 bg-white p-4">
+            <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-2 right-2 p-2 text-slate-500 md:hidden" aria-label="Close menu">
                 <X className="h-6 w-6" />
             </button>
             <SidebarContent />
@@ -153,14 +128,14 @@ export default function Dashboard({ profile }: DashboardProps) {
         <div onClick={() => setIsMobileMenuOpen(false)} className="flex-1 bg-black/50"></div>
       </div>
 
-      <aside className="hidden md:flex w-64 flex-col border-r border-gray-200 bg-white p-4">
+      <aside className="hidden md:flex w-64 flex-col border-r border-slate-200 bg-white p-4">
         <SidebarContent />
       </aside>
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        <header className="sticky top-0 z-10 bg-white p-4 shadow-md md:p-6">
+        <header className="sticky top-0 z-10 bg-white p-4 shadow-sm md:p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold capitalize text-gray-900">
+            <h2 className="text-xl font-semibold capitalize text-slate-900">
                 {currentPage === 'admin_dashboard' ? 'Platform Dashboard' :
                  [
                     { page: 'pos', title: 'Point of Sale'}, { page: 'overview', title: 'Shop Overview'}, { page: 'sales_history', title: 'Sales History'}, { page: 'expenses', title: 'Expense Tracking'}, { page: 'reports', title: 'Daily Summary Report'}, { page: 'credit_aging', title: 'Credit Aging Report'}, { page: 'products', title: 'Product Management'}, { page: 'customers', title: 'Customer Management'}, { page: 'credit', title: 'Credit Payments'}, { page: 'staff_management', title: 'Staff Management'},
@@ -168,7 +143,7 @@ export default function Dashboard({ profile }: DashboardProps) {
             </h2>
             <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-2 text-gray-600 md:hidden"
+                className="p-2 text-slate-600 md:hidden"
                 aria-label="Open menu"
             >
                 <Menu className="h-6 w-6" />
