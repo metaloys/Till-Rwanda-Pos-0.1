@@ -1,21 +1,19 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Customer, Profile, UserRole } from '../appTypes'; // Import Profile and UserRole
-import { History, RefreshCw } from 'lucide-react';
+import type { Customer, Profile, UserRole } from '../appTypes';
+import { History } from 'lucide-react'; // FIX: Removed unused 'RefreshCw'
 
-// --- NEW: Define props ---
 interface CreditAgingReportProps {
   shopId: string;
   profile: Profile;
   userRole: UserRole;
 }
-// --- END NEW ---
 
 type DebtorInfo = Customer & {
   last_credit_sale_date: string | null;
 };
 
-export default function CreditAgingReport({ shopId }: CreditAgingReportProps) { // Receive props
+export default function CreditAgingReport({ shopId }: CreditAgingReportProps) {
   const [debtorReport, setDebtorReport] = useState<DebtorInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
