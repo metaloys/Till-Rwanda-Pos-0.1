@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import type { ProductVariant, Customer, PaymentMethod } from '../appTypes';
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, X, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; // FIX: Removed X
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 
@@ -181,6 +181,7 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
     await handleCheckout('credit', null); 
   };
 
+
   return (
     <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 h-[calc(100vh-9rem)]">
       
@@ -245,12 +246,11 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
           <div className="mb-2 flex items-center justify-between text-sm text-red-600"><span className="font-medium">Discount:</span><span className="font-bold">{cartDiscountPercent}% (-{totalDiscountAmount.toLocaleString()} RWF)</span></div>
           <div className="mb-2 flex items-center justify-between text-sm text-slate-600"><span className="font-medium">Subtotal:</span><span>{subTotal.toLocaleString()} RWF</span></div>
           <div className="mb-4 flex items-center justify-between text-xl font-bold text-slate-900"><span>Total Due:</span><span>{cartTotal.toLocaleString()} RWF</span></div>
-          
           <button onClick={handleApplyDiscount} disabled={cart.length === 0 || isProcessing} className="mb-4 flex w-full items-center justify-center rounded-md bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-indigo-200 disabled:opacity-50"><Tag className="mr-2 h-4 w-4" /> Apply Discount ({cartDiscountPercent}%)</button>
           
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              {/* --- FIX: Standardize all payment button colors to be clean and simple --- */}
+              {/* --- RESTORE BRAND COLORS --- */}
               <button onClick={() => handleOpenPaymentModal('cash')} disabled={isProcessing || cart.length === 0} className="payment-button bg-green-600 hover:bg-green-700 text-white"><DollarSign className="mr-2 h-5 w-5" /> Cash</button>
               <button onClick={() => handleOpenPaymentModal('mtn_momo')} disabled={isProcessing || cart.length === 0} className="payment-button bg-yellow-500 hover:bg-yellow-600 text-slate-900"><Smartphone className="mr-2 h-5 w-5" /> MTN MoMo</button>
             </div>
