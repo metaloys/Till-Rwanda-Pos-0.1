@@ -1,9 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-// --- FIX: Removed unused Profile, UserRole, Sale, SaleItem ---
 import type { ProductVariant, Customer, PaymentMethod } from '../appTypes';
-// --- FIX: Removed unused X icon ---
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, X, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 
@@ -15,7 +13,6 @@ type CartItemVariant = ProductVariant & {
   final_price: number;
 };
 
-// --- FIX: Removed unused profile and userRole props ---
 interface PointOfSaleProps {
   shopId: string;
 }
@@ -184,20 +181,19 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
     await handleCheckout('credit', null); 
   };
 
-
   return (
     <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 h-[calc(100vh-9rem)]">
       
       <div className="md:col-span-7 h-full overflow-y-auto rounded-lg bg-white p-4 shadow order-2 md:order-1">
-        <h2 className="text-lg font-semibold text-gray-900">Products & Variants</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Products & Variants</h2>
         <div className="relative mt-4">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
                 type="text"
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="input-field w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="input-field w-full rounded-lg border border-slate-300 py-2 pl-10 pr-4 shadow-sm focus:border-indigo-600 focus:ring-indigo-600"
             />
         </div>
         
@@ -209,13 +205,13 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
                 <button
                   key={variant.id}
                   onClick={() => addToCart(variant)}
-                  className={` relative flex flex-col items-center justify-center rounded-lg border p-4 text-center shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${isLowStock ? 'border-red-300 bg-red-50 hover:border-red-500' : 'border-gray-200 bg-white hover:border-blue-500 hover:shadow-md'} `}
+                  className={` relative flex flex-col items-center justify-center rounded-lg border p-4 text-center shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-600 ${isLowStock ? 'border-red-300 bg-red-50 hover:border-red-500' : 'border-slate-200 bg-white hover:border-indigo-500 hover:shadow-md'} `}
                 >
                   {isLowStock && <AlertTriangle className="absolute top-2 right-2 h-4 w-4 text-red-500" />}
-                  {variant.image_url ? (<img src={variant.image_url} alt={variant.name || 'Product'} className="mb-2 h-16 w-16 rounded object-cover"/>) : (<div className="mb-2 h-16 w-16 rounded bg-gray-100 flex items-center justify-center text-xs text-gray-500">No Image</div>)}
-                  <span className="font-semibold text-gray-800 text-sm">{variant.name}</span> 
-                  <span className="mt-1 text-sm text-gray-500">{variant.price.toLocaleString()} RWF</span> 
-                  <span className={`mt-1 text-xs ${isLowStock ? 'font-bold text-red-600' : 'text-blue-600'}`}> (Stock: {variant.stock_quantity}) </span> 
+                  {variant.image_url ? (<img src={variant.image_url} alt={variant.name || 'Product'} className="mb-2 h-16 w-16 rounded object-cover"/>) : (<div className="mb-2 h-16 w-16 rounded bg-slate-100 flex items-center justify-center text-xs text-slate-500">No Image</div>)}
+                  <span className="font-semibold text-slate-800 text-sm">{variant.name}</span> 
+                  <span className="mt-1 text-sm text-slate-500">{variant.price.toLocaleString()} RWF</span> 
+                  <span className={`mt-1 text-xs ${isLowStock ? 'font-bold text-red-600' : 'text-indigo-600'}`}> (Stock: {variant.stock_quantity}) </span> 
                 </button>
               );
             })}
@@ -224,20 +220,20 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
       </div>
 
       <div className="md:col-span-5 flex flex-col rounded-lg bg-white p-4 shadow order-1 md:order-2 md:h-full">
-         <h2 className="flex items-center text-lg font-semibold text-gray-900"><ShoppingCart className="mr-2 h-5 w-5" /> Current Sale</h2>
-         <div className="mt-4"><label htmlFor="customer-select" className="block text-sm font-medium text-gray-700">Select Customer</label><div className="mt-1 flex rounded-md shadow-sm"><select id="customer-select" value={selectedCustomerId ?? ''} onChange={(e) => setSelectedCustomerId(e.target.value ? parseInt(e.target.value) : null)} className="input-field flex-1 rounded-none rounded-l-md" disabled={loadingCustomers}><option value="">-- Walk-in / Cash Sale --</option>{loadingCustomers ? (<option disabled>Loading...</option>) : (customers.map((customer) => (<option key={customer.id} value={customer.id}>{customer.name} {customer.phone ? `(${customer.phone})` : ''} - Bal: {customer.credit_balance.toLocaleString()} RWF</option>)))}</select><button type="button" className="relative -ml-px inline-flex items-center space-x-2 rounded-r-md border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"><UserPlus className="h-5 w-5 text-gray-400" /><span>New</span></button></div></div>
+         <h2 className="flex items-center text-lg font-semibold text-slate-900"><ShoppingCart className="mr-2 h-5 w-5" /> Current Sale</h2>
+         <div className="mt-4"><label htmlFor="customer-select" className="block text-sm font-medium text-slate-700">Select Customer</label><div className="mt-1 flex rounded-md shadow-sm"><select id="customer-select" value={selectedCustomerId ?? ''} onChange={(e) => setSelectedCustomerId(e.target.value ? parseInt(e.target.value) : null)} className="input-field flex-1 rounded-none rounded-l-md" disabled={loadingCustomers}><option value="">-- Walk-in / Cash Sale --</option>{loadingCustomers ? (<option disabled>Loading...</option>) : (customers.map((customer) => (<option key={customer.id} value={customer.id}>{customer.name} {customer.phone ? `(${customer.phone})` : ''} - Bal: {customer.credit_balance.toLocaleString()} RWF</option>)))}</select><button type="button" className="relative -ml-px inline-flex items-center space-x-2 rounded-r-md border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus:border-indigo-600 focus:ring-indigo-600"><UserPlus className="h-5 w-5 text-slate-400" /><span>New</span></button></div></div>
         
-        <div className="mt-4 flex-1 overflow-y-auto divide-y divide-gray-200">
-           <div className="flex justify-end pr-2 text-xs font-semibold text-gray-500">Price | Final Price</div>
-          {cart.length === 0 ? (<p className="flex h-full items-center justify-center text-gray-500">Cart is empty.</p>) : (
+        <div className="mt-4 flex-1 overflow-y-auto divide-y divide-slate-200">
+           <div className="flex justify-end pr-2 text-xs font-semibold text-slate-500">Price | Final Price</div>
+          {cart.length === 0 ? (<p className="flex h-full items-center justify-center text-slate-500">Cart is empty.</p>) : (
             cart.map((item) => (
               <div key={item.id} className="flex items-center justify-between py-3">
                 <div>
-                  <p className="font-medium text-gray-900">{item.name}</p>
-                  <p className="text-sm text-gray-500">{item.quantity} x {item.price.toLocaleString()} RWF</p>
+                  <p className="font-medium text-slate-900">{item.name}</p>
+                  <p className="text-sm text-slate-500">{item.quantity} x {item.price.toLocaleString()} RWF</p>
                 </div>
                 <div className='flex items-center gap-2'>
-                  <p className="font-medium text-gray-800">{(item.price * (1 - cartDiscountPercent / 100) * item.quantity).toLocaleString()} RWF</p>
+                  <p className="font-medium text-slate-800">{(item.price * (1 - cartDiscountPercent / 100) * item.quantity).toLocaleString()} RWF</p>
                   <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>
                 </div>
               </div>
@@ -245,22 +241,24 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
           )}
         </div>
         
-        <div className="mt-auto border-t-2 border-dashed border-gray-200 pt-4">
+        <div className="mt-auto border-t-2 border-dashed border-slate-200 pt-4">
           <div className="mb-2 flex items-center justify-between text-sm text-red-600"><span className="font-medium">Discount:</span><span className="font-bold">{cartDiscountPercent}% (-{totalDiscountAmount.toLocaleString()} RWF)</span></div>
-          <div className="mb-2 flex items-center justify-between text-sm text-gray-600"><span className="font-medium">Subtotal:</span><span>{subTotal.toLocaleString()} RWF</span></div>
-          <div className="mb-4 flex items-center justify-between text-xl font-bold text-gray-900"><span>Total Due:</span><span>{cartTotal.toLocaleString()} RWF</span></div>
+          <div className="mb-2 flex items-center justify-between text-sm text-slate-600"><span className="font-medium">Subtotal:</span><span>{subTotal.toLocaleString()} RWF</span></div>
+          <div className="mb-4 flex items-center justify-between text-xl font-bold text-slate-900"><span>Total Due:</span><span>{cartTotal.toLocaleString()} RWF</span></div>
+          
           <button onClick={handleApplyDiscount} disabled={cart.length === 0 || isProcessing} className="mb-4 flex w-full items-center justify-center rounded-md bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-indigo-200 disabled:opacity-50"><Tag className="mr-2 h-4 w-4" /> Apply Discount ({cartDiscountPercent}%)</button>
           
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => handleOpenPaymentModal('cash')} disabled={isProcessing || cart.length === 0} className="payment-button bg-green-600 hover:bg-green-500 text-white"><DollarSign className="mr-2 h-5 w-5" /> Cash</button>
-              <button onClick={() => handleOpenPaymentModal('mtn_momo')} disabled={isProcessing || cart.length === 0} className="payment-button bg-yellow-500 hover:bg-yellow-400 text-black"><Smartphone className="mr-2 h-5 w-5" /> MTN MoMo</button>
+              {/* --- FIX: Standardize all payment button colors to be clean and simple --- */}
+              <button onClick={() => handleOpenPaymentModal('cash')} disabled={isProcessing || cart.length === 0} className="payment-button bg-green-600 hover:bg-green-700 text-white"><DollarSign className="mr-2 h-5 w-5" /> Cash</button>
+              <button onClick={() => handleOpenPaymentModal('mtn_momo')} disabled={isProcessing || cart.length === 0} className="payment-button bg-yellow-500 hover:bg-yellow-600 text-slate-900"><Smartphone className="mr-2 h-5 w-5" /> MTN MoMo</button>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => handleOpenPaymentModal('airtel_money')} disabled={isProcessing || cart.length === 0} className="payment-button bg-red-600 hover:bg-red-500 text-white"><Smartphone className="mr-2 h-5 w-5" /> Airtel Money</button>
-              <button onClick={() => handleOpenPaymentModal('bank_transfer')} disabled={isProcessing || cart.length === 0} className="payment-button bg-blue-600 hover:bg-blue-500 text-white"><Landmark className="mr-2 h-5 w-5" /> Bank Transfer</button>
+              <button onClick={() => handleOpenPaymentModal('airtel_money')} disabled={isProcessing || cart.length === 0} className="payment-button bg-red-600 hover:bg-red-700 text-white"><Smartphone className="mr-2 h-5 w-5" /> Airtel Money</button>
+              <button onClick={() => handleOpenPaymentModal('bank_transfer')} disabled={isProcessing || cart.length === 0} className="payment-button bg-indigo-600 hover:bg-indigo-700 text-white"><Landmark className="mr-2 h-5 w-5" /> Bank Transfer</button>
             </div>
-            <button onClick={handleCompleteSaleCredit} disabled={isProcessing || cart.length === 0 || !selectedCustomerId} className="payment-button w-full bg-orange-600 hover:bg-orange-500 text-white disabled:bg-gray-400"><CreditCard className="mr-2 h-5 w-5" /> Pay Later (Credit)</button>
+            <button onClick={handleCompleteSaleCredit} disabled={isProcessing || cart.length === 0 || !selectedCustomerId} className="payment-button w-full bg-orange-600 hover:bg-orange-700 text-white disabled:bg-slate-400"><CreditCard className="mr-2 h-5 w-5" /> Pay Later (Credit)</button>
           </div>
         </div>
       </div>
