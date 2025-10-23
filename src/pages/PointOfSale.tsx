@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole, Sale, SaleItem } from '../appTypes';
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, X, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
+// --- FIX: Removed unused Profile, UserRole, Sale, SaleItem ---
+import type { ProductVariant, Customer, PaymentMethod } from '../appTypes';
+// --- FIX: Removed unused X icon ---
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 
