@@ -1,18 +1,30 @@
-import defaultTheme from 'tailwindcss/defaultTheme'
+@import "tailwindcss";
 
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {
-      // Add 'Inter' as the default sans-serif font
-      fontFamily: {
-        sans: ['Inter', ...defaultTheme.fontFamily.sans],
-      },
-    },
-  },
-  plugins: [],
+body {
+  font-family: 'Inter', sans-serif;
+  @apply font-sans antialiased;
+  @apply bg-slate-50;
+}
+
+/* Helper classes we've added */
+.label-style {
+  @apply block text-sm font-medium text-slate-700;
+}
+.input-field {
+  @apply mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm;
+  /* Standard input focus color */
+  @apply focus:border-indigo-600 focus:ring-indigo-600;
+}
+.th-style {
+ @apply px-4 py-3 text-left text-xs font-medium uppercase text-slate-500 tracking-wider;
+}
+.td-style {
+  @apply px-4 py-3 whitespace-nowrap;
+}
+.action-button {
+  @apply inline-flex items-center rounded px-2 py-1 text-xs font-medium disabled:opacity-50;
+}
+.payment-button {
+  /* This base style remains for all POS payment buttons */
+  @apply flex w-full items-center justify-center rounded-md px-3 py-2.5 text-sm font-semibold shadow-sm disabled:opacity-50;
 }

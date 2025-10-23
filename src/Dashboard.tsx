@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from './supabaseClient';
 import type { Profile, UserRole } from './appTypes.ts'; 
-import { Menu, X, Building } from 'lucide-react';
+import { Menu, X } from 'lucide-react'; 
 
 // Import our pages
 import Overview from './pages/Overview';
@@ -68,7 +68,7 @@ export default function Dashboard({ profile }: DashboardProps) {
   };
 
   const NavLink = ({ pageName, label, isPrimary = false, isSubItem = false }: { pageName: Page; label: string; isPrimary?: boolean; isSubItem?: boolean; }) => (
-    // --- Use default indigo colors ---
+    // Standardized to Indigo brand colors
     <button onClick={() => handlePageSelect(pageName)} className={` w-full rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${ isPrimary ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700' : currentPage === pageName ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' } ${isSubItem ? 'pl-6' : ''} `} > {label} </button>
   );
 
@@ -77,9 +77,9 @@ export default function Dashboard({ profile }: DashboardProps) {
 
   const SidebarContent = () => (
     <>
-      <div className="mb-4 px-3 flex items-center space-x-2">
-           <Building className="h-7 w-7 text-indigo-600" />
+      <div className="mb-4 px-3">
            <h1 className="text-2xl font-black text-slate-900">TillRwanda PoS</h1>
+           <p className="text-xs font-semibold text-gray-500">{shopName}</p>
       </div>
       
       <p className={`mb-4 px-3 text-xs font-semibold capitalize ${isSuperAdmin ? 'text-purple-600' : 'text-indigo-600'}`}>
@@ -88,8 +88,13 @@ export default function Dashboard({ profile }: DashboardProps) {
 
       <nav className="flex-1 space-y-1">
         {!isSuperAdmin && <NavLink pageName="pos" label="New Sale (POS)" isPrimary={true} />}
+        
         <hr className="my-2" />
-        {isSuperAdmin && (<NavLink pageName="admin_dashboard" label="Platform Dashboard" isSubItem={false}/>)}
+
+        {isSuperAdmin && (
+            <NavLink pageName="admin_dashboard" label="Platform Dashboard" isSubItem={false}/>
+        )}
+
         <NavLink pageName="overview" label="Shop Overview" isSubItem={isSuperAdmin ? true : false}/>
 
         <div className="pt-2">
@@ -120,7 +125,11 @@ export default function Dashboard({ profile }: DashboardProps) {
     <div className="flex h-screen bg-slate-50">
       <div className={`fixed inset-0 z-40 flex md:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
         <div className="relative flex w-64 max-w-[80vw] flex-col border-r border-slate-200 bg-white p-4">
-            <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-2 right-2 p-2 text-slate-500 md:hidden" aria-label="Close menu">
+            <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="absolute top-2 right-2 p-2 text-slate-500 md:hidden"
+                aria-label="Close menu"
+            >
                 <X className="h-6 w-6" />
             </button>
             <SidebarContent />
