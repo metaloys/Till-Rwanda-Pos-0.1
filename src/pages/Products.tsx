@@ -7,7 +7,7 @@ import ProductVariantModal from '../components/ProductVariantModal';
 
 interface ProductsProps {
   shopId: string;
-  // FIX: Removed unused profile and userRole props
+  // FIX: Removed unused profile prop
 }
 
 export default function Products({ shopId }: ProductsProps) {
@@ -22,7 +22,6 @@ export default function Products({ shopId }: ProductsProps) {
 
   async function fetchProducts() {
     setLoading(true);
-    // RLS handles filtering, just select the columns
     const { data, error } = await supabase.from('products').select('id, name, created_at, category, image_url, has_variants');
     if (error) {
         console.error('Error fetching products:', error.message);
@@ -33,7 +32,7 @@ export default function Products({ shopId }: ProductsProps) {
   }
 
   useEffect(() => {
-    if(shopId) fetchProducts(); // Fetch products only when shopId is available
+    if(shopId) fetchProducts();
   }, [shopId]);
 
   const openVariantManagement = (product: Product) => {
