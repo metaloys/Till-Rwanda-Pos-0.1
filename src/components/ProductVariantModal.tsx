@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-// --- FIX 1 & 2: Corrected type-only imports ---
 import type { FormEvent, ChangeEvent } from 'react';
 import { supabase } from '../supabaseClient';
 import type { Product, ProductVariant } from '../appTypes';
@@ -72,11 +71,7 @@ export default function ProductVariantModal({
 
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // --- FIX 3: Add null check for product ---
-    if (!product) {
-        alert("Error: No product selected.");
-        return;
-    }
+    if (!product) { alert("Error: No product selected."); return; }
     
     setIsProcessing(true);
     let imageUrlToSave: string | null = currentImageUrl;
@@ -121,13 +116,16 @@ export default function ProductVariantModal({
     }
   };
 
+  // --- FIX: Add null check for product ---
   const handleDeleteVariant = async (variantId: number) => {
-    if (!product || !confirm('Are you sure?')) return;
+    if (!product || !confirm('Are you sure you want to delete this variant? Stock will be lost.')) return;
+    // --- END FIX ---
+
     setIsProcessing(true);
     try {
       const { error } = await supabase.from('product_variants').delete().eq('id', variantId);
       if (error) throw new Error(error.message);
-      fetchVariants(product.id);
+      fetchVariants(product.id); // Safe to use product.id here
       onVariantUpdate();
     } catch (error: any) {
       alert(`Error deleting variant: ${error.message}`);
@@ -147,7 +145,7 @@ export default function ProductVariantModal({
       const { error } = await supabase.rpc('update_stock', { variant_id_to_update: variant.id, quantity_change: amountToAdd });
       if (error) throw new Error(`Stock update failed: ${error.message}`);
       alert(`${amountToAdd} units added to ${variant.name}.`);
-      fetchVariants(product.id);
+      if (product) fetchVariants(product.id); // Check product before using
       onVariantUpdate();
     } catch (error: any) {
       alert(`Error: ${error.message}`);
