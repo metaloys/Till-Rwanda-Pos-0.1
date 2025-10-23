@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../supabaseClient';
 import type { UserRole, Profile } from '../appTypes.ts';
-import { Users, AlertTriangle, Loader2, Mail, Shield, Calendar } from 'lucide-react'; // Added icons
+import { Users, AlertTriangle, Loader2, Mail, Shield, Calendar } from 'lucide-react';
 
 const ROLE_OPTIONS: UserRole[] = ['cashier', 'manager'];
 
@@ -19,7 +19,7 @@ export default function StaffManagement({ userRole, profile }: StaffManagementPr
   const [inviteRole, setInviteRole] = useState<UserRole>('cashier');
 
   async function fetchStaffProfiles() { if (!profile.shop_id) { setLoading(false); return; } setLoading(true); const { data, error } = await supabase.from('profiles').select('*').eq('shop_id', profile.shop_id).neq('id', profile.id).order('full_name', { ascending: true }); if (error) { console.error('Error fetching staff profiles:', error.message); alert(error.message); } else if (data) { setStaffProfiles(data as Profile[]); } setLoading(false); }
-  useEffect(() => { fetchStaffProfiles(); }, [profile.shop_id]);
+  useEffect(() => { if(profile.shop_id) fetchStaffProfiles(); }, [profile.shop_id]);
 
   const handleRoleChange = async (targetProfile: Profile, newRole: UserRole) => { if (!confirm(`Update ${targetProfile.full_name}'s role to ${newRole.toUpperCase()}?`)) { return; } setIsProcessing(true); try { const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', targetProfile.id); if (error) throw new Error(error.message); alert(`Role updated.`); fetchStaffProfiles(); } catch (error: any) { alert(`Failed: ${error.message}`); } finally { setIsProcessing(false); } };
   const handleInviteStaff = async (e: FormEvent) => { e.preventDefault(); if (!profile.shop_id) return alert("Shop ID not found."); setIsProcessing(true); try { const { error } = await supabase.functions.invoke('invite-staff', { body: JSON.stringify({ email: inviteEmail, role: inviteRole, shopId: profile.shop_id, ownerName: profile.full_name || 'Owner', }), headers: { 'Content-Type': 'application/json' }, }); if (error) throw new Error(error.message); alert(`Invitation sent to ${inviteEmail}.`); setInviteEmail(''); fetchStaffProfiles(); } catch (error: any) { alert(`Invitation failed: ${error.message}`); } finally { setIsProcessing(false); } };
@@ -33,7 +33,7 @@ export default function StaffManagement({ userRole, profile }: StaffManagementPr
       <>
         {/* --- DESKTOP TABLE (Hidden on mobile) --- */}
         <div className="mt-4 hidden md:block flow-root overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200"><thead className="bg-gray-50"><tr><th className="th-style">Name / Email</th><th className="th-style">Member Since</th><th className="th-style">Current Role</th><th className="th-style">Change Role</th></tr></thead><tbody className="divide-y divide-gray-200 bg-white">{staffProfiles.length === 0 ? (<tr><td colSpan={4} className="td-style text-center text-gray-500">No other staff members found.</td></tr>) : (staffProfiles.map((staffProfile) => (<tr key={staffProfile.id}><td className="td-style font-medium text-gray-900">{staffProfile.full_name || staffProfile.id}<p className="text-xs text-gray-500">{staffProfile.id}</p></td><td className="td-style text-sm text-gray-500">{new Date(staffProfile.created_at).toLocaleDateString()}</td><td className={`td-style font-semibold capitalize ${staffProfile.role === 'owner' ? 'text-purple-600' : staffProfile.role === 'manager' ? 'text-indigo-600' : 'text-blue-600'}`}>{staffProfile.role}</td><td className="td-style"><select value={staffProfile.role} onChange={(e) => handleRoleChange(staffProfile, e.target.value as UserRole)} disabled={isProcessing || staffProfile.role === 'owner' || userRole !== 'owner'} className="input-field py-1 text-sm disabled:bg-gray-100 disabled:opacity-80 disabled:cursor-not-allowed">{ROLE_OPTIONS.map((role) => ( <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</Coption> ))}</select></td></tr>)))}</tbody></table>
+          <table className="min-w-full divide-y divide-gray-200"><thead className="bg-gray-50"><tr><th className="th-style">Name / Email</th><th className="th-style">Member Since</th><th className="th-style">Current Role</th><th className="th-style">Change Role</th></tr></thead><tbody className="divide-y divide-gray-200 bg-white">{staffProfiles.length === 0 ? (<tr><td colSpan={4} className="td-style text-center text-gray-500">No other staff members found.</td></tr>) : (staffProfiles.map((staffProfile) => (<tr key={staffProfile.id}><td className="td-style font-medium text-gray-900">{staffProfile.full_name || staffProfile.id}<p className="text-xs text-gray-500">{staffProfile.id}</p></td><td className="td-style text-sm text-gray-500">{new Date(staffProfile.created_at).toLocaleDateString()}</td><td className={`td-style font-semibold capitalize ${staffProfile.role === 'owner' ? 'text-purple-600' : staffProfile.role === 'manager' ? 'text-indigo-600' : 'text-blue-600'}`}>{staffProfile.role}</td><td className="td-style"><select value={staffProfile.role} onChange={(e) => handleRoleChange(staffProfile, e.target.value as UserRole)} disabled={isProcessing || staffProfile.role === 'owner' || userRole !== 'owner'} className="input-field py-1 text-sm disabled:bg-gray-100 disabled:opacity-80 disabled:cursor-not-allowed">{ROLE_OPTIONS.map((role) => ( <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option> ))}</select></td></tr>)))}</tbody></table>
         </div>
         
         {/* --- MOBILE CARD LIST (Visible on mobile) --- */}
@@ -51,9 +51,11 @@ export default function StaffManagement({ userRole, profile }: StaffManagementPr
                 <div className="mt-3 border-t pt-3">
                   <label htmlFor={`role-${staffProfile.id}`} className="label-style text-xs">Change Role:</label>
                   <select id={`role-${staffProfile.id}`} value={staffProfile.role} onChange={(e) => handleRoleChange(staffProfile, e.target.value as UserRole)} disabled={isProcessing || staffProfile.role === 'owner' || userRole !== 'owner'} className="input-field py-2 text-sm disabled:bg-gray-100 disabled:opacity-80">
-                    {ROLE_OPTIONS.map((role) => (
-                      <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
+                    {/* --- FIX IS HERE --- */}
+                    {ROLE_OPTIONS.map((role) => ( 
+                      <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option> 
                     ))}
+                    {/* --- END FIX --- */}
                   </select>
                 </div>
               </div>
