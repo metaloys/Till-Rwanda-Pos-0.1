@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Product, UserRole } from '../appTypes';
+import type { Product, UserRole } from '../appTypes'; // Removed Profile
 import { Edit, Package } from 'lucide-react';
 import ProductVariantModal from '../components/ProductVariantModal';
 
 interface ProductsProps {
   shopId: string;
-  userRole: UserRole;
+  userRole: UserRole; // This prop is passed but was not in the interface
+  // FIX: Removed unused profile prop
 }
 
 export default function Products({ shopId }: ProductsProps) {
@@ -22,6 +23,7 @@ export default function Products({ shopId }: ProductsProps) {
 
   async function fetchProducts() {
     setLoading(true);
+    // RLS handles filtering, just select the columns
     const { data, error } = await supabase.from('products').select('id, name, created_at, category, image_url, has_variants');
     if (error) {
         console.error('Error fetching products:', error.message);
@@ -32,7 +34,7 @@ export default function Products({ shopId }: ProductsProps) {
   }
 
   useEffect(() => {
-    if(shopId) fetchProducts();
+    if(shopId) fetchProducts(); // Fetch products only when shopId is available
   }, [shopId]);
 
   const openVariantManagement = (product: Product) => {
