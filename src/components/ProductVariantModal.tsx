@@ -1,4 +1,6 @@
-import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+// --- FIX: Corrected type-only imports ---
+import type { FormEvent, ChangeEvent } from 'react'; 
 import { supabase } from '../supabaseClient';
 import type { Product, ProductVariant } from '../appTypes';
 import { X, PlusCircle, Trash2, Loader2, Upload, Edit, XCircle } from 'lucide-react';
