@@ -155,7 +155,6 @@ export default function Dashboard({ profile }: DashboardProps) {
         <SidebarContent />
       </aside>
 
-
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-y-auto">
         {/* --- Header with Hamburger Menu --- */}
