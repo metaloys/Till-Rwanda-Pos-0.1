@@ -75,7 +75,7 @@ export default function ExpenseTracking({ shopId }: ExpenseTrackingProps) {
                 {expenses.length === 0 ? (<p className="py-10 text-center text-slate-500">No expenses recorded.</p>) : (
                   expenses.map((expense) => (
                     <div key={expense.id} className="rounded-lg border bg-white p-4 shadow-sm">
-                      <div className="flex items-center justify-between"><div className="font-bold text-slate-900">{expense.description}</div><div className="font-bold text-lg text-red-700">{expense.amount.toLocaleString()} RWF}</div></div>
+                      <div className="flex items-center justify-between"><div className="font-bold text-slate-900">{expense.description}</div><div className="font-bold text-lg text-red-700">{expense.amount.toLocaleString()} RWF</div></div>
                       <div className="mt-2 space-y-1.5 text-sm text-slate-600">
                         <div className="flex items-center"><Calendar className="mr-2 h-4 w-4" /> {expense.expense_date}</div>
                         <div className="flex items-center"><Tag className="mr-2 h-4 w-4" /> {expense.category || 'N/A'}</div>
@@ -92,5 +92,6 @@ export default function ExpenseTracking({ shopId }: ExpenseTrackingProps) {
           )}
         </div>
       </div>
-    </div> );
+    </div>
+  );
 }
