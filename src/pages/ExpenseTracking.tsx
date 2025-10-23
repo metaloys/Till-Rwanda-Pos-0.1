@@ -61,10 +61,7 @@ export default function ExpenseTracking({ shopId }: ExpenseTrackingProps) {
       
       {/* RIGHT COLUMN: Expense List */}
       <div className="lg:col-span-2">
-        <div className="rounded-lg bg-white p-4 md:p-6 shadow">
-          <h2 className="flex items-center text-lg font-semibold text-slate-900"><ReceiptText className="mr-2 h-5 w-5" /> Recorded Expenses</h2>
-          <button onClick={fetchExpenses} disabled={loading || isProcessing} className="mt-2 text-xs text-indigo-600 hover:underline disabled:opacity-50">{loading ? 'Refreshing...' : 'Refresh List'}</button>
-          
+        <div className="rounded-lg bg-white p-4 md:p-6 shadow"><h2 className="flex items-center text-lg font-semibold text-slate-900"><ReceiptText className="mr-2 h-5 w-5" /> Recorded Expenses</h2><button onClick={fetchExpenses} disabled={loading || isProcessing} className="mt-2 text-xs text-indigo-600 hover:underline disabled:opacity-50">{loading ? 'Refreshing...' : 'Refresh List'}</button>
           {loading ? (
             <p className="py-10 text-center text-slate-500">Loading...</p>
           ) : (
@@ -72,28 +69,28 @@ export default function ExpenseTracking({ shopId }: ExpenseTrackingProps) {
               {/* --- DESKTOP TABLE (Hidden on mobile) --- */}
               <div className="mt-4 hidden md:block flow-root overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200"><thead className="bg-slate-50"><tr><th className="th-style">Date</th><th className="th-style">Description</th><th className="th-style">Category</th><th className="th-style">Amount</th><th className="th-style">Recurrence</th><th className="th-style">Receipt</th></tr></thead><tbody className="divide-y divide-slate-200 bg-white">{expenses.length === 0 ? (<tr><td colSpan={6} className="td-style text-center text-slate-500">No expenses recorded.</td></tr>) : (expenses.map((expense) => (<tr key={expense.id}><td className="td-style text-sm text-slate-500">{expense.expense_date}</td><td className="td-style font-medium text-slate-900">{expense.description}</td><td className="td-style text-sm text-slate-500">{expense.category || 'N/A'}</td><td className="td-style font-medium text-red-700">{expense.amount.toLocaleString()} RWF</td><td className="td-style text-sm text-slate-500">{expense.is_recurring ? (<div className="flex items-center space-x-1 font-medium text-purple-700"><Repeat2 className="h-4 w-4" /><span className="capitalize">{expense.recurrence_interval}</span></div>) : ('One-time')}</td><td className="td-style">{expense.receipt_url ? (<button onClick={() => handleViewReceipt(expense.receipt_url as string)} className="action-button bg-purple-100 text-purple-700 hover:bg-purple-200">View</button>) : ('N/A')}</td></tr>)))}</tbody></table>
-            </div>
-            {/* --- MOBILE CARD LIST (Visible on mobile) --- */}
-            <div className="mt-4 space-y-4 md:hidden">
-              {expenses.length === 0 ? (<p className="py-10 text-center text-slate-500">No expenses recorded.</p>) : (
-                expenses.map((expense) => (
-                  <div key={expense.id} className="rounded-lg border bg-white p-4 shadow-sm">
-                    <div className="flex items-center justify-between"><div className="font-bold text-slate-900">{expense.description}</div><div className="font-bold text-lg text-red-700">{expense.amount.toLocaleString()} RWF</div></div>
-                    <div className="mt-2 space-y-1.5 text-sm text-slate-600">
-                      <div className="flex items-center"><Calendar className="mr-2 h-4 w-4" /> {expense.expense_date}</div>
-                      <div className="flex items-center"><Tag className="mr-2 h-4 w-4" /> {expense.category || 'N/A'}</div>
-                      <div className="flex items-center">
-                        {expense.is_recurring ? (<div className="flex items-center font-medium text-purple-700"><Repeat2 className="mr-2 h-4 w-4" /> <span className="capitalize">{expense.recurrence_interval}</span></div>) : (<span className="text-slate-500">One-time expense</span>)}
+              </div>
+              {/* --- MOBILE CARD LIST (Visible on mobile) --- */}
+              <div className="mt-4 space-y-4 md:hidden">
+                {expenses.length === 0 ? (<p className="py-10 text-center text-slate-500">No expenses recorded.</p>) : (
+                  expenses.map((expense) => (
+                    <div key={expense.id} className="rounded-lg border bg-white p-4 shadow-sm">
+                      <div className="flex items-center justify-between"><div className="font-bold text-slate-900">{expense.description}</div><div className="font-bold text-lg text-red-700">{expense.amount.toLocaleString()} RWF}</div></div>
+                      <div className="mt-2 space-y-1.5 text-sm text-slate-600">
+                        <div className="flex items-center"><Calendar className="mr-2 h-4 w-4" /> {expense.expense_date}</div>
+                        <div className="flex items-center"><Tag className="mr-2 h-4 w-4" /> {expense.category || 'N/A'}</div>
+                        <div className="flex items-center">
+                          {expense.is_recurring ? (<div className="flex items-center font-medium text-purple-700"><Repeat2 className="mr-2 h-4 w-4" /> <span className="capitalize">{expense.recurrence_interval}</span></div>) : (<span className="text-slate-500">One-time expense</span>)}
+                        </div>
                       </div>
+                      {expense.receipt_url && (<button onClick={() => handleViewReceipt(expense.receipt_url as string)} className="action-button mt-3 w-full justify-center bg-purple-100 text-purple-700 hover:bg-purple-200"><ReceiptText className="mr-1.5 h-4 w-4" /> View Receipt</button>)}
                     </div>
-                    {expense.receipt_url && (<button onClick={() => handleViewReceipt(expense.receipt_url as string)} className="action-button mt-3 w-full justify-center bg-purple-100 text-purple-700 hover:bg-purple-200"><ReceiptText className="mr-1.5 h-4 w-4" /> View Receipt</button>)}
-                  </div>
-                ))
-              )}
-            </div>
-          </>
-        )}
+                  ))
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </div>
-  </div> );
+    </div> );
 }
