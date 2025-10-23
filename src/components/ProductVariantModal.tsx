@@ -1,4 +1,5 @@
-import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import type { FormEvent, ChangeEvent } from 'react'; // FIX: Type-only imports
 import { supabase } from '../supabaseClient';
 import type { Product, ProductVariant } from '../appTypes';
 import { X, PlusCircle, Trash2, Loader2, Upload, Edit, XCircle } from 'lucide-react';
@@ -21,7 +22,6 @@ export default function ProductVariantModal({
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [loading, setLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-
   const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -30,52 +30,31 @@ export default function ProductVariantModal({
   const [attribute2, setAttribute2] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
-  
   const fileInputRef = useRef<HTMLInputElement>(null); 
 
   const resetFormState = () => {
     setName(''); setPrice(''); setStock(''); setAttribute1(''); setAttribute2('');
     setImageFile(null); setEditingVariant(null); setCurrentImageUrl(null);
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) { fileInputRef.current.value = ''; }
   };
 
   useEffect(() => {
-    if (isOpen && product) {
-      fetchVariants(product.id);
-    } else {
-      setVariants([]); 
-      resetFormState();
-    }
+    if (isOpen && product) { fetchVariants(product.id); } 
+    else { setVariants([]); resetFormState(); }
   }, [isOpen, product]);
 
   async function fetchVariants(productId: number) {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('product_variants')
-      .select('*')
-      .eq('product_id', productId)
-      .order('name', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching variants:', error.message);
-      alert(error.message);
-    } else if (data) {
-      setVariants(data);
-    }
+    const { data, error } = await supabase.from('product_variants').select('*').eq('product_id', productId).order('name', { ascending: true });
+    if (error) { console.error('Error fetching variants:', error.message); alert(error.message); } 
+    else if (data) { setVariants(data); }
     setLoading(false);
   }
   
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setImageFile(e.target.files[0]);
-    } else {
-      setImageFile(null);
-    }
+    if (e.target.files && e.target.files.length > 0) { setImageFile(e.target.files[0]); } 
+    else { setImageFile(null); }
   };
-
 
   const startEditing = (variant: ProductVariant) => {
     setEditingVariant(variant);
@@ -85,25 +64,20 @@ export default function ProductVariantModal({
     setAttribute1(variant.attribute_1 || '');
     setAttribute2(variant.attribute_2 || '');
     setCurrentImageUrl(variant.image_url);
-    
-    if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-    }
-
+    if (fileInputRef.current) { fileInputRef.current.value = ''; }
     const formElement = document.getElementById('variant-form');
     if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
   };
 
-
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!product) return;
+    if (!product) return; // FIX: Added null check
     setIsProcessing(true);
     let imageUrlToSave: string | null = currentImageUrl;
     
     try {
         if (imageFile) {
-            const baseId = editingVariant?.id || product.id;
+            const baseId = editingVariant?.id || product.id; // Safe now
             const fileExt = imageFile.name.split('.').pop();
             const fileName = `variant-${baseId}-${Date.now()}.${fileExt}`;
             const filePath = `product_variants/${fileName}`;
@@ -142,7 +116,7 @@ export default function ProductVariantModal({
   };
 
   const handleDeleteVariant = async (variantId: number) => {
-    if (!product || !confirm('Are you sure you want to delete this variant? Stock will be lost.')) return;
+    if (!product || !confirm('Are you sure?')) return;
     setIsProcessing(true);
     try {
       const { error } = await supabase.from('product_variants').delete().eq('id', variantId);
@@ -160,19 +134,11 @@ export default function ProductVariantModal({
     if (isProcessing) return;
     const amountStr = prompt(`Current stock for ${variant.name} is ${variant.stock_quantity}.\n\nHow many units are you ADDING?`);
     if (!amountStr) return;
-
     const amountToAdd = parseInt(amountStr, 10);
-    if (isNaN(amountToAdd) || amountToAdd <= 0) {
-      alert('Invalid quantity. Please enter a positive number.');
-      return;
-    }
-
+    if (isNaN(amountToAdd) || amountToAdd <= 0) { alert('Invalid quantity.'); return; }
     setIsProcessing(true);
     try {
-      const { error } = await supabase.rpc('update_stock', {
-        variant_id_to_update: variant.id,
-        quantity_change: amountToAdd 
-      });
+      const { error } = await supabase.rpc('update_stock', { variant_id_to_update: variant.id, quantity_change: amountToAdd });
       if (error) throw new Error(`Stock update failed: ${error.message}`);
       alert(`${amountToAdd} units added to ${variant.name}.`);
       fetchVariants(product.id);
@@ -190,25 +156,19 @@ export default function ProductVariantModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="relative w-full max-w-4xl rounded-lg bg-white p-6 shadow-xl">
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" title="Close"><X size={20} /></button>
-
         <h2 className="mb-4 text-2xl font-bold text-gray-800">Variants for: {product.name}</h2>
         <p className="mb-6 text-sm text-gray-500">Manage options, prices, and stock for this product.</p>
-
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div id="variant-form" className="lg:col-span-1 rounded-lg border border-dashed border-gray-300 p-4">
             <h3 className="mb-3 text-lg font-semibold flex justify-between items-center">
                 {editingVariant ? 'Edit Variant' : 'Add New Variant'}
-                {editingVariant && (
-                    <button type="button" onClick={resetFormState} className="text-sm text-gray-500 hover:text-red-500 flex items-center" disabled={isProcessing}>
-                        <XCircle className="h-4 w-4 mr-1" /> Cancel Edit
-                    </button>
-                )}
+                {editingVariant && (<button type="button" onClick={resetFormState} className="text-sm text-gray-500 hover:text-red-500 flex items-center" disabled={isProcessing}><XCircle className="h-4 w-4 mr-1" /> Cancel Edit</button>)}
             </h3>
             <form onSubmit={handleFormSubmit} className="space-y-3">
-              <div><label htmlFor="name" className="label-style">Variant Name (e.g., Small Red)</label><input id="name" type="text" className="input-field" value={name} onChange={(e) => setName(e.target.value)} disabled={isProcessing} /></div>
+              <div><label htmlFor="name" className="label-style">Variant Name</label><input id="name" type="text" className="input-field" value={name} onChange={(e) => setName(e.target.value)} disabled={isProcessing} /></div>
               <div className="grid grid-cols-2 gap-2">
-                 <div><label htmlFor="attr1" className="label-style">Attribute 1 (Size)</label><input id="attr1" type="text" className="input-field" value={attribute1} onChange={(e) => setAttribute1(e.target.value)} disabled={isProcessing} /></div>
-                 <div><label htmlFor="attr2" className="label-style">Attribute 2 (Color)</label><input id="attr2" type="text" className="input-field" value={attribute2} onChange={(e) => setAttribute2(e.target.value)} disabled={isProcessing} /></div>
+                 <div><label htmlFor="attr1" className="label-style">Attribute 1</label><input id="attr1" type="text" className="input-field" value={attribute1} onChange={(e) => setAttribute1(e.target.value)} disabled={isProcessing} /></div>
+                 <div><label htmlFor="attr2" className="label-style">Attribute 2</label><input id="attr2" type="text" className="input-field" value={attribute2} onChange={(e) => setAttribute2(e.target.value)} disabled={isProcessing} /></div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                  <div><label htmlFor="price" className="label-style">Price (RWF)</label><input id="price" type="number" step="0.01" required className="input-field" value={price} onChange={(e) => setPrice(e.target.value)} disabled={isProcessing} /></div>
@@ -225,43 +185,25 @@ export default function ProductVariantModal({
               </button>
             </form>
           </div>
-
           <div className="lg:col-span-2 overflow-x-auto">
             <h3 className="mb-3 text-lg font-semibold">Current Variants ({variants.length})</h3>
-            {loading ? (
-                <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-gray-500" /></div>
-            ) : variants.length === 0 ? (
-                <p className="text-gray-500">No variants defined. Add one using the form.</p>
-            ) : (
+            {loading ? (<div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-gray-500" /></div>) : 
+             variants.length === 0 ? (<p className="text-gray-500">No variants defined.</p>) : (
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
-                        <tr>
-                            <th className="th-style">Image</th>
-                            <th className="th-style">Variant Name</th>
-                            <th className="th-style">Price</th>
-                            <th className="th-style">Stock</th>
-                            <th className="th-style text-right">Actions</th>
-                        </tr>
+                        <tr><th className="th-style">Image</th><th className="th-style">Variant Name</th><th className="th-style">Price</th><th className="th-style">Stock</th><th className="th-style text-right">Actions</th></tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
                         {variants.map((variant) => (
                             <tr key={variant.id}>
-                                <td className="td-style">
-                                    {variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-10 w-10 rounded object-cover" /> ) : ( <div className="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-xs text-gray-600">No Img</div> )}
-                                </td>
+                                <td className="td-style">{variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-10 w-10 rounded object-cover" /> ) : ( <div className="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-xs text-gray-600">No Img</div> )}</td>
                                 <td className="td-style font-medium">{variant.name || `${variant.attribute_1 || ''} ${variant.attribute_2 || ''}`.trim()}</td>
                                 <td className="td-style">{variant.price.toLocaleString()} RWF</td>
                                 <td className={`td-style font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600' : 'text-gray-900'}`}>{variant.stock_quantity}</td>
                                 <td className="td-style text-right whitespace-nowrap">
-                                    <button onClick={() => handleRestock(variant)} disabled={isProcessing} className="action-button bg-green-100 text-green-700 hover:bg-green-200">
-                                        <PlusCircle className="h-3 w-3" /> Restock
-                                    </button>
-                                    <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button bg-yellow-100 text-yellow-700 hover:bg-yellow-200 ml-2">
-                                        <Edit className="h-3 w-3" /> Edit
-                                    </button>
-                                    <button onClick={() => handleDeleteVariant(variant.id)} disabled={isProcessing} className="action-button bg-red-100 text-red-700 hover:bg-red-200 ml-2">
-                                        <Trash2 className="h-3 w-3" /> Delete
-                                    </button>
+                                    <button onClick={() => handleRestock(variant)} disabled={isProcessing} className="action-button bg-green-100 text-green-700 hover:bg-green-200"><PlusCircle className="h-3 w-3" /> Restock</button>
+                                    <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button bg-yellow-100 text-yellow-700 hover:bg-yellow-200 ml-2"><Edit className="h-3 w-3" /> Edit</button>
+                                    <button onClick={() => handleDeleteVariant(variant.id)} disabled={isProcessing} className="action-button bg-red-100 text-red-700 hover:bg-red-200 ml-2"><Trash2 className="h-3 w-3" /> Delete</button>
                                 </td>
                             </tr>
                         ))}
@@ -270,11 +212,7 @@ export default function ProductVariantModal({
             )}
           </div>
         </div>
-        <div className="mt-6 text-right">
-             <button onClick={onClose} className="rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-300">
-                 Done
-             </button>
-         </div>
+        <div className="mt-6 text-right"><button onClick={onClose} className="rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-300">Done</button></div>
       </div>
     </div>
   );

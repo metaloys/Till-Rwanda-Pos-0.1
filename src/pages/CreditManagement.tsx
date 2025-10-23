@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import type { Customer, Profile, UserRole } from '../appTypes';
-import { CircleDollarSign, MessageSquareText, Loader2, History, User, Phone, DollarSign } from 'lucide-react'; // Added icons
+import { CircleDollarSign, MessageSquareText, Loader2, Phone } from 'lucide-react'; // Removed unused
 import CustomerHistoryModal from '../components/CustomerHistoryModal';
 
 interface CreditManagementProps {
@@ -26,34 +26,19 @@ export default function CreditManagement({ shopId }: CreditManagementProps) {
   const handleViewHistory = (customer: Customer) => { setHistoryCustomer(customer); setShowHistoryModal(true); };
 
   return ( <div className="relative rounded-lg bg-white p-4 md:p-6 shadow"><h2 className="text-lg font-semibold text-gray-900">Customer Credit Balances</h2><button onClick={fetchDebtors} disabled={loading || isSubmittingPayment || !!sendingReminderId} className="mt-2 text-xs text-blue-600 hover:underline disabled:opacity-50">{loading ? 'Refreshing...' : 'Refresh List'}</button>
-    {loading ? (
-      <p className="py-10 text-center text-gray-500">Loading customer balances...</p>
-    ) : (
+    {loading ? (<p className="py-10 text-center text-gray-500">Loading...</p>) : (
       <>
-        {/* --- DESKTOP TABLE (Hidden on mobile) --- */}
-        <div className="mt-4 hidden md:block flow-root overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200"><thead className="bg-gray-50"><tr><th className="th-style">Name</th><th className="th-style">Phone</th><th className="th-style">Balance Owed (RWF)</th><th className="th-style">Actions</th></tr></thead><tbody className="divide-y divide-gray-200 bg-white">{!loading && debtors.length === 0 ? (<tr><td colSpan={4} className="td-style text-center text-gray-500">No customers with outstanding credit.</td></tr>) : (debtors.map((customer) => (<tr key={customer.id}><td className="td-style font-medium"><button onClick={() => handleViewHistory(customer)} className="text-blue-600 hover:text-blue-800 hover:underline" title="View Credit History">{customer.name}</button></td><td className="td-style text-sm text-gray-500">{customer.phone || 'N/A'}</td><td className="td-style font-semibold text-red-600">{customer.credit_balance.toLocaleString()} RWF</td><td className="td-style space-x-2 whitespace-nowrap"><button onClick={() => handleRecordPayment(customer)} disabled={isSubmittingPayment || !!sendingReminderId} className="action-button bg-green-100 text-green-700 hover:bg-green-200"><CircleDollarSign className="-ml-0.5 mr-1 h-3 w-3" /> Payment</button><button onClick={() => handleSendReminder(customer)} disabled={isSubmittingPayment || !!sendingReminderId || !customer.phone} className="action-button bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed" title={!customer.phone ? "No phone" : "Send reminder"}>{sendingReminderId === customer.id ? (<Loader2 className="mr-1 h-3 w-3 animate-spin" />) : (<MessageSquareText className="-ml-0.5 mr-1 h-3 w-3" />)}{sendingReminderId === customer.id ? 'Sending...' : 'Reminder'}</button></td></tr>)))}</tbody></table>
-        </div>
-
-        {/* --- MOBILE CARD LIST (Visible on mobile) --- */}
+        <div className="mt-4 hidden md:block flow-root overflow-x-auto"><table className="min-w-full divide-y divide-gray-200"><thead className="bg-gray-50"><tr><th className="th-style">Name</th><th className="th-style">Phone</th><th className="th-style">Balance Owed (RWF)</th><th className="th-style">Actions</th></tr></thead><tbody className="divide-y divide-gray-200 bg-white">{!loading && debtors.length === 0 ? (<tr><td colSpan={4} className="td-style text-center text-gray-500">No customers with outstanding credit.</td></tr>) : (debtors.map((customer) => (<tr key={customer.id}><td className="td-style font-medium"><button onClick={() => handleViewHistory(customer)} className="text-blue-600 hover:text-blue-800 hover:underline" title="View Credit History">{customer.name}</button></td><td className="td-style text-sm text-gray-500">{customer.phone || 'N/A'}</td><td className="td-style font-semibold text-red-600">{customer.credit_balance.toLocaleString()} RWF</td><td className="td-style space-x-2 whitespace-nowrap"><button onClick={() => handleRecordPayment(customer)} disabled={isSubmittingPayment || !!sendingReminderId} className="action-button bg-green-100 text-green-700 hover:bg-green-200"><CircleDollarSign className="-ml-0.5 mr-1 h-3 w-3" /> Payment</button><button onClick={() => handleSendReminder(customer)} disabled={isSubmittingPayment || !!sendingReminderId || !customer.phone} className="action-button bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed" title={!customer.phone ? "No phone" : "Send reminder"}>{sendingReminderId === customer.id ? (<Loader2 className="mr-1 h-4 w-4 animate-spin" />) : (<MessageSquareText className="-ml-0.5 mr-1 h-3 w-3" />)}{sendingReminderId === customer.id ? '...' : 'Reminder'}</button></td></tr>)))}</tbody></table></div>
         <div className="mt-4 space-y-4 md:hidden">
           {!loading && debtors.length === 0 ? (<p className="py-10 text-center text-gray-500">No customers with outstanding credit.</p>) : (
             debtors.map((customer) => (
               <div key={customer.id} className="rounded-lg border bg-white p-4 shadow-sm">
                 <div className="flex items-start justify-between">
-                  <button onClick={() => handleViewHistory(customer)} className="text-left" title="View Credit History">
-                    <div className="font-bold text-gray-900">{customer.name}</div>
-                    <div className="text-sm text-gray-600 flex items-center mt-1"><Phone className="mr-1.5 h-4 w-4" /> {customer.phone || 'N/A'}</div>
-                  </button>
-                  <div className="text-right">
-                    <div className="font-bold text-lg text-red-600">{customer.credit_balance.toLocaleString()} RWF</div>
-                    <div className="text-xs text-gray-500">Balance Owed</div>
-                  </div>
+                  <button onClick={() => handleViewHistory(customer)} className="text-left" title="View Credit History"><div className="font-bold text-gray-900">{customer.name}</div><div className="text-sm text-gray-600 flex items-center mt-1"><Phone className="mr-1.5 h-4 w-4" /> {customer.phone || 'N/A'}</div></button>
+                  <div className="text-right flex-shrink-0 ml-2"><div className="font-bold text-lg text-red-600">{customer.credit_balance.toLocaleString()} RWF</div><div className="text-xs text-gray-500">Balance</div></div>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2 border-t pt-3">
-                  <button onClick={() => handleRecordPayment(customer)} disabled={isSubmittingPayment || !!sendingReminderId} className="action-button justify-center bg-green-100 text-green-700 hover:bg-green-200">
-                    <CircleDollarSign className="mr-1 h-4 w-4" /> Payment
-                  </button>
+                  <button onClick={() => handleRecordPayment(customer)} disabled={isSubmittingPayment || !!sendingReminderId} className="action-button justify-center bg-green-100 text-green-700 hover:bg-green-200"><CircleDollarSign className="mr-1 h-4 w-4" /> Payment</button>
                   <button onClick={() => handleSendReminder(customer)} disabled={isSubmittingPayment || !!sendingReminderId || !customer.phone} className="action-button justify-center bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50">
                     {sendingReminderId === customer.id ? (<Loader2 className="mr-1 h-4 w-4 animate-spin" />) : (<MessageSquareText className="mr-1 h-4 w-4" />)}
                     {sendingReminderId === customer.id ? '...' : 'Reminder'}

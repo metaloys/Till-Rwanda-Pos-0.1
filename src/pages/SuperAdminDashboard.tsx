@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Store, CalendarX, CheckCircle, Loader2, TrendingUp } from 'lucide-react'; // Added icons
+import { Store, CalendarX, CheckCircle, Loader2, TrendingUp, Calendar } from 'lucide-react'; // FIX: Added Calendar
 
 type ShopMetric = {
     id: string;
@@ -23,36 +23,20 @@ export default function SuperAdminDashboard() {
     const expiredTrials = shops.filter(s => s.is_active && s.days_left <= 0).length;
 
     return ( <div className="space-y-8"><h1 className="text-2xl font-bold text-gray-800 border-b pb-3">Platform Super Admin Overview</h1><div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"><div className="rounded-lg bg-white p-5 shadow"><p className="text-sm font-medium text-gray-500">Total Shops Onboarded</p><p className="mt-1 text-3xl font-bold text-blue-700">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : totalShops}</p></div><div className="rounded-lg bg-white p-5 shadow"><p className="text-sm font-medium text-gray-500">Active Paid Shops</p><p className="mt-1 text-3xl font-bold text-green-700">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : activeShops}</p></div><div className="rounded-lg bg-white p-5 shadow"><p className="text-sm font-medium text-gray-500">Shops in Free Trial</p><p className="mt-1 text-3xl font-bold text-indigo-700">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : trialShops}</p></div><div className={`rounded-lg p-5 shadow ${expiredTrials > 0 ? 'bg-red-100' : 'bg-white'}`}><p className="text-sm font-medium text-gray-500">Trials Expired</p><p className="mt-1 text-3xl font-bold text-red-700">{loading ? <Loader2 className="h-6 w-6 animate-spin" /> : expiredTrials}</p></div></div><div className="rounded-lg bg-white p-4 md:p-6 shadow"><h2 className="flex items-center text-lg font-semibold text-gray-900 border-b pb-3"><Store className="mr-2 h-5 w-5" /> All Registered Businesses</h2>
-      {loading ? (
-        <p className="py-10 text-center text-gray-500">Loading shops...</p>
-      ) : (
+      {loading ? (<p className="py-10 text-center text-gray-500">Loading...</p>) : (
         <>
-          {/* --- DESKTOP TABLE (Hidden on mobile) --- */}
-          <div className="mt-4 hidden md:block flow-root overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 mt-4"><thead className="bg-gray-50"><tr><th className="th-style">Shop Name</th><th className="th-style">Active</th><th className="th-style">Trial End Date</th><th className="th-style">Days Remaining</th><th className="th-style text-right">Actions</th></tr></thead><tbody className="divide-y divide-gray-200 bg-white">{shops.map(shop => (<tr key={shop.id}><td className="td-style font-medium text-gray-900">{shop.name}</td><td className="td-style">{shop.is_active ? <CheckCircle className="h-5 w-5 text-green-500" /> : <CalendarX className="h-5 w-5 text-red-500" />}</td><td className="td-style text-sm text-gray-700">{new Date(shop.trial_ends_at).toLocaleDateString()}</td><td className={`td-style font-semibold ${shop.days_left <= 0 ? 'text-red-600' : 'text-green-600'}`}>{shop.days_left <= 0 ? 'EXPIRED' : shop.days_left}</td><td className="td-style text-right whitespace-nowrap"><button className="action-button bg-indigo-100 text-indigo-700 hover:bg-indigo-200">View Data</button></td></tr>))}</tbody></table>
-          </div>
-          
-          {/* --- MOBILE CARD LIST (Visible on mobile) --- */}
+          <div className="mt-4 hidden md:block flow-root overflow-x-auto"><table className="min-w-full divide-y divide-gray-200 mt-4"><thead className="bg-gray-50"><tr><th className="th-style">Shop Name</th><th className="th-style">Active</th><th className="th-style">Trial End Date</th><th className="th-style">Days Remaining</th><th className="th-style text-right">Actions</th></tr></thead><tbody className="divide-y divide-gray-200 bg-white">{shops.map(shop => (<tr key={shop.id}><td className="td-style font-medium text-gray-900">{shop.name}</td><td className="td-style">{shop.is_active ? <CheckCircle className="h-5 w-5 text-green-500" /> : <CalendarX className="h-5 w-5 text-red-500" />}</td><td className="td-style text-sm text-gray-700">{new Date(shop.trial_ends_at).toLocaleDateString()}</td><td className={`td-style font-semibold ${shop.days_left <= 0 ? 'text-red-600' : 'text-green-600'}`}>{shop.days_left <= 0 ? 'EXPIRED' : shop.days_left}</td><td className="td-style text-right whitespace-nowrap"><button className="action-button bg-indigo-100 text-indigo-700 hover:bg-indigo-200">View Data</button></td></tr>))}</tbody></table></div>
           <div className="mt-4 space-y-4 md:hidden">
             {shops.map(shop => (
               <div key={shop.id} className="rounded-lg border bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-gray-900">{shop.name}</div>
-                  {shop.is_active ? (
-                    <span className="flex items-center text-xs font-semibold text-green-600"><CheckCircle className="mr-1 h-4 w-4" /> Active</span>
-                  ) : (
-                    <span className="flex items-center text-xs font-semibold text-red-600"><CalendarX className="mr-1 h-4 w-4" /> Inactive</span>
-                  )}
-                </div>
+                <div className="flex items-center justify-between"><div className="font-bold text-gray-900">{shop.name}</div>{shop.is_active ? (<span className="flex items-center text-xs font-semibold text-green-600"><CheckCircle className="mr-1 h-4 w-4" /> Active</span>) : (<span className="flex items-center text-xs font-semibold text-red-600"><CalendarX className="mr-1 h-4 w-4" /> Inactive</span>)}</div>
                 <div className="mt-2 space-y-1.5 text-sm text-gray-600">
                   <div className="flex items-center"><Calendar className="mr-2 h-4 w-4" /> Trial Ends: {new Date(shop.trial_ends_at).toLocaleDateString()}</div>
                   <div className={`flex items-center font-medium ${shop.days_left <= 0 ? 'text-red-600' : 'text-green-600'}`}>
                     <TrendingUp className="mr-2 h-4 w-4" /> {shop.days_left <= 0 ? 'EXPIRED' : `${shop.days_left} days left`}
                   </div>
                 </div>
-                <button className="action-button mt-3 w-full justify-center bg-indigo-100 text-indigo-700 hover:bg-indigo-200">
-                  View Data
-                </button>
+                <button className="action-button mt-3 w-full justify-center bg-indigo-100 text-indigo-700 hover:bg-indigo-200">View Data</button>
               </div>
             ))}
           </div>

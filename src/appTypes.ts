@@ -24,4 +24,12 @@ export type CreditPayment = { id: number; created_at: string; customer_id: numbe
 
 export type UserRole = 'owner' | 'manager' | 'cashier';
 
-export type Profile = { id: string; created_at: string; full_name: string | null; shop_name: string | null; role: UserRole; is_super_admin: boolean; shop_id: string | null; };
+export type Profile = {
+  id: string; 
+  created_at: string;
+  full_name: string | null;
+  shop_name: string | null;
+  role: UserRole;
+  is_super_admin: boolean;
+  shop_id: string | null;
+};
