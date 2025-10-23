@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-// --- FIX: Corrected type-only imports ---
+// --- FIX 1 & 2: Corrected type-only imports ---
 import type { FormEvent, ChangeEvent } from 'react'; 
 import { supabase } from '../supabaseClient';
 import type { Product, ProductVariant } from '../appTypes';
@@ -94,7 +94,7 @@ export default function ProductVariantModal({
 
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // --- FIX: Add null check for product ---
+    // --- FIX 3: Add null check for product ---
     if (!product) {
         alert("Error: No product selected.");
         return;
