@@ -1,4 +1,6 @@
-import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+// --- FIX 1 & 2: Corrected type-only imports ---
+import type { FormEvent, ChangeEvent } from 'react';
 import { supabase } from '../supabaseClient';
 import type { Product, ProductVariant } from '../appTypes';
 import { X, PlusCircle, Trash2, Loader2, Upload, Edit, XCircle } from 'lucide-react';
@@ -21,7 +23,6 @@ export default function ProductVariantModal({
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [loading, setLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-
   const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -30,51 +31,31 @@ export default function ProductVariantModal({
   const [attribute2, setAttribute2] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null); 
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetFormState = () => {
     setName(''); setPrice(''); setStock(''); setAttribute1(''); setAttribute2('');
     setImageFile(null); setEditingVariant(null); setCurrentImageUrl(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) { fileInputRef.current.value = ''; }
   };
 
   useEffect(() => {
-    if (isOpen && product) {
-      fetchVariants(product.id);
-    } else {
-      setVariants([]); 
-      resetFormState();
-    }
+    if (isOpen && product) { fetchVariants(product.id); }
+    else { setVariants([]); resetFormState(); }
   }, [isOpen, product]);
 
   async function fetchVariants(productId: number) {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('product_variants')
-      .select('*')
-      .eq('product_id', productId)
-      .order('name', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching variants:', error.message);
-      alert(error.message);
-    } else if (data) {
-      setVariants(data);
-    }
+    const { data, error } = await supabase.from('product_variants').select('*').eq('product_id', productId).order('name', { ascending: true });
+    if (error) { console.error('Error fetching variants:', error.message); alert(error.message); }
+    else if (data) { setVariants(data); }
     setLoading(false);
   }
   
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setImageFile(e.target.files[0]);
-    } else {
-      setImageFile(null);
-    }
+    if (e.target.files && e.target.files.length > 0) { setImageFile(e.target.files[0]); }
+    else { setImageFile(null); }
   };
-
 
   const startEditing = (variant: ProductVariant) => {
     setEditingVariant(variant);
@@ -89,9 +70,9 @@ export default function ProductVariantModal({
     if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
   };
 
-
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // --- FIX 3: Add null check for product ---
     if (!product) {
         alert("Error: No product selected.");
         return;
@@ -141,7 +122,7 @@ export default function ProductVariantModal({
   };
 
   const handleDeleteVariant = async (variantId: number) => {
-    if (!product || !confirm('Are you sure you want to delete this variant? Stock will be lost.')) return;
+    if (!product || !confirm('Are you sure?')) return;
     setIsProcessing(true);
     try {
       const { error } = await supabase.from('product_variants').delete().eq('id', variantId);
@@ -160,10 +141,7 @@ export default function ProductVariantModal({
     const amountStr = prompt(`Current stock for ${variant.name} is ${variant.stock_quantity}.\n\nHow many units are you ADDING?`);
     if (!amountStr) return;
     const amountToAdd = parseInt(amountStr, 10);
-    if (isNaN(amountToAdd) || amountToAdd <= 0) {
-      alert('Invalid quantity. Please enter a positive number.');
-      return;
-    }
+    if (isNaN(amountToAdd) || amountToAdd <= 0) { alert('Invalid quantity.'); return; }
     setIsProcessing(true);
     try {
       const { error } = await supabase.rpc('update_stock', { variant_id_to_update: variant.id, quantity_change: amountToAdd });
@@ -184,12 +162,9 @@ export default function ProductVariantModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="relative w-full max-w-4xl rounded-lg bg-white p-4 md:p-6 shadow-xl">
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" title="Close"><X size={20} /></button>
-
         <h2 className="mb-4 text-2xl font-bold text-gray-800">Variants for: {product.name}</h2>
         <p className="mb-6 text-sm text-gray-500">Manage options, prices, and stock for this product.</p>
-
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* LEFT: Add/Edit Variant Form */}
           <div id="variant-form" className="lg:col-span-1 rounded-lg border border-dashed border-gray-300 p-4">
             <h3 className="mb-3 text-lg font-semibold flex justify-between items-center">
                 {editingVariant ? 'Edit Variant' : 'Add New Variant'}
@@ -216,14 +191,11 @@ export default function ProductVariantModal({
               </button>
             </form>
           </div>
-
-          {/* RIGHT: Variant List */}
           <div className="lg:col-span-2">
             <h3 className="mb-3 text-lg font-semibold">Current Variants ({variants.length})</h3>
             {loading ? (<div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-gray-500" /></div>) : 
-             variants.length === 0 ? (<p className="text-gray-500">No variants defined. Add one using the form.</p>) : (
+             variants.length === 0 ? (<p className="text-gray-500">No variants defined.</p>) : (
                 <>
-                  {/* --- DESKTOP TABLE (Hidden on mobile) --- */}
                   <div className="hidden md:block flow-root overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -246,8 +218,6 @@ export default function ProductVariantModal({
                         </tbody>
                     </table>
                   </div>
-
-                  {/* --- MOBILE CARD LIST (Visible on mobile) --- */}
                   <div className="space-y-4 md:hidden">
                     {variants.map((variant) => (
                         <div key={variant.id} className="rounded-lg border bg-white p-4 shadow-sm">
