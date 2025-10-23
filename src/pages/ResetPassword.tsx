@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react'; // FIX: Use type-only import
 import { supabase } from '../supabaseClient';
 
 export default function ResetPassword() {
@@ -13,13 +14,12 @@ export default function ResetPassword() {
     setError('');
     setMessage('');
 
-    // The access_token is in the URL hash after the user clicks the email link
     const { error } = await supabase.auth.updateUser({ password: password });
 
     if (error) {
       setError(error.message);
     } else {
-      setMessage('Your password has been updated successfully! You can now log in.');
+      setMessage('Your password has been updated successfully! You can now close this page and log in.');
     }
     setLoading(false);
   };
@@ -35,7 +35,7 @@ export default function ResetPassword() {
         ) : (
           <form className="space-y-6" onSubmit={handlePasswordReset}>
             <div>
-              <label htmlFor="password">New Password</label>
+              <label htmlFor="password" className="label-style">New Password</label>
               <input
                 id="password"
                 type="password"

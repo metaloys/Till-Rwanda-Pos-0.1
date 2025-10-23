@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole } from '../appTypes';
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, X, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
+import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole, Sale, SaleItem } from '../appTypes';
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; // FIX: Removed 'X'
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 
@@ -36,7 +36,6 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0); 
   const [searchTerm, setSearchTerm] = useState('');
 
-  // --- UPDATED: fetchVariants now safely handles orphan variants ---
   async function fetchVariants() {
     setLoadingProducts(true);
     const { data, error } = await supabase
@@ -49,7 +48,6 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
         console.error("Error fetching items:", error.message);
     } else if (data) {
         const sellableItems: ProductVariant[] = data
-            // --- FIX: Filter out variants whose parent product is null ---
             .filter(item => item.products !== null) 
             .map(item => {
                 const productInfo = item.products as { name: string, category: string, id: number };
@@ -59,7 +57,6 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
     }
     setLoadingProducts(false);
   }
-  // --- END UPDATE ---
 
   async function fetchCustomers() { 
     setLoadingCustomers(true); 
@@ -185,6 +182,7 @@ export default function PointOfSale({ shopId }: PointOfSaleProps) {
     
     await handleCheckout('credit', null); 
   };
+
 
   return (
     <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 h-[calc(100vh-9rem)]">
