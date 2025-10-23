@@ -89,9 +89,8 @@ export default function Dashboard({ profile }: DashboardProps) {
         </p>
 
         <nav className="flex-1 space-y-1">
-          {/* --- FIX: Correctly show the POS button --- */}
+          {/* --- FIX: Show POS unless super admin --- */}
           {!isSuperAdmin && <NavLink pageName="pos" label="New Sale (POS)" isPrimary={true} />}
-          {/* --- END FIX --- */}
           
           <hr className="my-2" />
 
