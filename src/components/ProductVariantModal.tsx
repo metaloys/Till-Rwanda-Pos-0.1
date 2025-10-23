@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
-import type { FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, FormEvent, ChangeEvent, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import type { Product, ProductVariant } from '../appTypes';
 import { X, PlusCircle, Trash2, Loader2, Upload, Edit, XCircle } from 'lucide-react';
