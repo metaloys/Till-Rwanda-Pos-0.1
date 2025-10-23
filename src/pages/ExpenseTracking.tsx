@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent, ChangeEvent } from 'react';
 import { supabase } from '../supabaseClient';
 import type { Expense, Profile, UserRole } from '../appTypes';
-import { ReceiptText, Upload, Repeat2, Calendar, Tag, DollarSign } from 'lucide-react';
+import { ReceiptText, Upload, Repeat2, Calendar, Tag } from 'lucide-react'; // FIX: Removed DollarSign
 
 interface ExpenseTrackingProps {
   shopId: string;
@@ -32,12 +32,11 @@ export default function ExpenseTracking({ shopId }: ExpenseTrackingProps) {
 
   const handleAddExpense = async (e: FormEvent) => { e.preventDefault(); setIsProcessing(true); let uploadedReceiptUrl: string | null = null; try { if (receiptFile) { const fileExt = receiptFile.name.split('.').pop(); const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`; const filePath = `receipts/${fileName}`; const { data: uploadData, error: uploadError } = await supabase.storage.from('receipts').upload(filePath, receiptFile, { cacheControl: '3600', upsert: false }); if (uploadError) throw new Error(`Receipt upload failed: ${uploadError.message}`); uploadedReceiptUrl = `${supabase.storage.from('receipts').getPublicUrl(uploadData.path).data.publicUrl}`; } 
     
-    const expenseData = { description, amount: parseFloat(amount), category: category || null, expense_date: expenseDate, receipt_url: uploadedReceiptUrl, is_recurring: isRecurring, recurrence_interval: isRecurring ? recurrenceInterval : null, next_due_date: isRecurring ? nextDueDate : null, shop_id: shopId }; 
+    const expenseData = { description, amount: parseFloat(amount), category: category || null, expense_date: expenseDate, receipt_url: uploadedReceiptUrl, is_recurring: isRecurring, recurrence_interval: isRecurring ? recurrenceInterval : null, next_due_date: nextDueDate || null, shop_id: shopId }; 
     
     const { error: insertError } = await supabase.from('expenses').insert(expenseData); 
     if (insertError) throw new Error(insertError.message); setDescription(''); setAmount(''); setCategory(DEFAULT_CATEGORIES[0]); setExpenseDate(new Date().toISOString().split('T')[0]); setReceiptFile(null); setIsRecurring(false); setRecurrenceInterval(''); setNextDueDate(''); 
     
-    // Clear file input DOM reference
     const fileInput = document.getElementById('receipt') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
 
@@ -52,16 +51,14 @@ export default function ExpenseTracking({ shopId }: ExpenseTrackingProps) {
         <p className="py-10 text-center text-slate-500">Loading...</p>
       ) : (
         <>
-          {/* --- DESKTOP TABLE (Hidden on mobile) --- */}
           <div className="mt-4 hidden md:block flow-root overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200"><thead className="bg-slate-50"><tr><th className="th-style">Date</th><th className="th-style">Description</th><th className="th-style">Category</th><th className="th-style">Amount</th><th className="th-style">Recurrence</th><th className="th-style">Receipt</th></tr></thead><tbody className="divide-y divide-slate-200 bg-white">{expenses.length === 0 ? (<tr><td colSpan={6} className="td-style text-center text-slate-500">No expenses recorded.</td></tr>) : (expenses.map((expense) => (<tr key={expense.id}><td className="td-style text-sm text-slate-500">{expense.expense_date}</td><td className="td-style font-medium text-slate-900">{expense.description}</td><td className="td-style text-sm text-slate-500">{expense.category || 'N/A'}</td><td className="td-style font-medium text-red-700">{expense.amount.toLocaleString()} RWF</td><td className="td-style text-sm text-slate-500">{expense.is_recurring ? (<div className="flex items-center space-x-1 font-medium text-purple-700"><Repeat2 className="h-4 w-4" /><span className="capitalize">{expense.recurrence_interval}</span></div>) : ('One-time')}</td><td className="td-style">{expense.receipt_url ? (<button onClick={() => handleViewReceipt(expense.receipt_url as string)} className="action-button bg-purple-100 text-purple-700 hover:bg-purple-200">View</button>) : ('N/A')}</td></tr>)))}</tbody></table>
+            <table className="min-w-full divide-y divide-slate-200"><thead className="bg-slate-50"><tr><th className="th-style">Date</th><th className="th-style">Description</th><th className="th-style">Category</th><th className="th-style">Amount</th><th className="th-style">Recurrence</th><th className="th-style">Receipt</th></tr></thead><tbody className="divide-y divide-slate-200 bg-white">{expenses.length === 0 ? (<tr><td colSpan={6} className="td-style text-center text-slate-500">No expenses recorded.</td></tr>) : (expenses.map((expense) => (<tr key={expense.id}><td className="td-style text-sm text-slate-500">{expense.expense_date}</td><td className="td-style font-medium text-slate-900">{expense.description}</td><td className="td-style text-sm text-slate-500">{expense.category || 'N/A'}</td><td className="td-style font-medium text-red-700">{expense.amount.toLocaleString()} RWF}</td><td className="td-style text-sm text-slate-500">{expense.is_recurring ? (<div className="flex items-center space-x-1 font-medium text-purple-700"><Repeat2 className="h-4 w-4" /><span className="capitalize">{expense.recurrence_interval}</span></div>) : ('One-time')}</td><td className="td-style">{expense.receipt_url ? (<button onClick={() => handleViewReceipt(expense.receipt_url as string)} className="action-button bg-purple-100 text-purple-700 hover:bg-purple-200">View</button>) : ('N/A')}</td></tr>)))}</tbody></table>
           </div>
-          {/* --- MOBILE CARD LIST (Visible on mobile) --- */}
           <div className="mt-4 space-y-4 md:hidden">
             {expenses.length === 0 ? (<p className="py-10 text-center text-slate-500">No expenses recorded.</p>) : (
               expenses.map((expense) => (
                 <div key={expense.id} className="rounded-lg border bg-white p-4 shadow-sm">
-                  <div className="flex items-center justify-between"><div className="font-bold text-slate-900">{expense.description}</div><div className="font-bold text-lg text-red-700">{expense.amount.toLocaleString()} RWF</div></div>
+                  <div className="flex items-center justify-between"><div className="font-bold text-slate-900">{expense.description}</div><div className="font-bold text-lg text-red-700">{expense.amount.toLocaleString()} RWF}</div></div>
                   <div className="mt-2 space-y-1.5 text-sm text-slate-600">
                     <div className="flex items-center"><Calendar className="mr-2 h-4 w-4" /> {expense.expense_date}</div>
                     <div className="flex items-center"><Tag className="mr-2 h-4 w-4" /> {expense.category || 'N/A'}</div>
