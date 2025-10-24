@@ -5,48 +5,79 @@ import type { Profile } from './appTypes.ts';
 import Auth from './Auth';
 import Dashboard from './Dashboard';
 import ResetPassword from './pages/ResetPassword';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  
-  // --- FIX: Check for reset hash on initial render ---
   const [isPasswordReset, setIsPasswordReset] = useState(
     window.location.hash.includes('type=recovery')
   );
-  // --- END FIX ---
 
   const fetchProfile = async (userId: string) => {
     setIsLoadingProfile(true);
-    const { data, error } = await supabase.from('profiles').select('id, full_name, shop_name, role, is_super_admin, shop_id').eq('id', userId).single();
-    if (error) { console.error('Error fetching profile:', error); setProfile(null); }
-    else if (data) { setProfile(data as Profile); }
+    
+    // --- THIS IS THE FIX ---
+    // We must do two separate, simple queries.
+
+    // 1. Get the user's profile first
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*') // Select all columns from profiles
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profileData) {
+      console.error('Error fetching profile:', profileError?.message);
+      setProfile(null);
+      setIsLoadingProfile(false);
+      return;
+    }
+
+    // 2. Now, create the full profile object
+    let fullProfile: Profile = profileData as Profile;
+    
+    if (profileData.is_super_admin) {
+      // Super admins are always active
+      fullProfile.is_active = true;
+    } else if (profileData.shop_id) {
+      // This is a regular shop owner, so we MUST check their shop's status
+      const { data: shopData, error: shopError } = await supabase
+        .from('shops')
+        .select('is_active, trial_ends_at')
+        .eq('id', profileData.shop_id)
+        .single();
+        
+      if (shopError) {
+        console.error('Error fetching shop status:', shopError.message);
+        fullProfile.is_active = false; // Default to inactive if shop query fails
+      } else if (shopData) {
+        fullProfile.is_active = shopData.is_active;
+        fullProfile.trial_ends_at = shopData.trial_ends_at;
+      }
+    } else {
+      // User has no shop_id and is not admin, they are locked out.
+      fullProfile.is_active = false;
+    }
+
+    setProfile(fullProfile);
     setIsLoadingProfile(false);
   };
+  // --- END FIX ---
 
   useEffect(() => {
-    // 1. Set up the main auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      
       if (_event === 'PASSWORD_RECOVERY') {
-        // User successfully reset password. Show login page.
-        setIsPasswordReset(false);
-        setSession(null);
-        setProfile(null);
+        setIsPasswordReset(false); setSession(null); setProfile(null);
       } else if (_event === 'SIGNED_IN') {
         setSession(session);
-        if (session && !isPasswordReset) { // Only fetch profile if NOT in reset mode
-          fetchProfile(session.user.id);
-        }
+        if (session && !isPasswordReset) { fetchProfile(session.user.id); }
       } else if (_event === 'SIGNED_OUT') {
-        setSession(null);
-        setProfile(null);
-        setIsPasswordReset(false);
+        setSession(null); setProfile(null); setIsPasswordReset(false);
       }
     });
 
-    // 2. Get initial session, *unless* we are in password reset mode
     if (!isPasswordReset) {
        supabase.auth.getSession().then(({ data: { session } }) => {
          setSession(session);
@@ -57,37 +88,36 @@ function App() {
          }
        });
     } else {
-        setIsLoadingProfile(false); // We are not loading a profile
+        setIsLoadingProfile(false);
     }
 
     return () => subscription.unsubscribe();
-  }, []); // Run only once
+  }, [isPasswordReset]);
 
-  // --- RENDER LOGIC (NOW IN CORRECT ORDER) ---
+  // --- RENDER LOGIC ---
   
-  // 1. If we are in password reset mode, show that page first.
   if (isPasswordReset) {
-    return <ResetPassword />;
+    return ( <> <Toaster position="top-center" reverseOrder={false} /> <ResetPassword /> </> );
   }
   
-  // 2. If no session, show login
   if (!session) {
-    return <Auth />;
+    return ( <> <Toaster position="top-center" reverseOrder={false} /> <Auth /> </> );
   }
 
-  // 3. If loading profile...
   if (isLoadingProfile) {
-    return <div className="flex min-h-screen items-center justify-center bg-gray-100"><p>Loading...</p></div>;
+    return <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900"><p className="text-slate-700 dark:text-slate-300">Loading user profile...</p></div>;
   }
   
-  // 4. If profile is bad...
+  // This check now correctly handles super admins
   if (!profile || (!profile.shop_id && !profile.is_super_admin)) { 
-      return <div className="flex min-h-screen items-center justify-center bg-gray-100"><p className="text-xl text-red-700">Access Error: Profile not linked to a business.</p></div>;
+      return <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900"><p className="text-xl text-red-600 p-4">Access Error: Profile not linked to a business.</p></div>;
   }
 
-  // 5. Show dashboard
   return (
-    <Dashboard profile={profile} />
+    <>
+      <Toaster position="top-center" reverseOrder={false} />
+      <Dashboard profile={profile} />
+    </>
   );
 }
 
