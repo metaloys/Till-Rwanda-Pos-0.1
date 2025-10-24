@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Product, UserRole, Profile } from '../appTypes';
+import type { Product, UserRole, Profile } from '../appTypes'; // Re-added Profile
 import { Edit, Package, Tag } from 'lucide-react';
 import ProductVariantModal from '../components/ProductVariantModal';
 
+// --- FIX: Re-add profile and userRole to the props interface ---
 interface ProductsProps {
   shopId: string;
   userRole: UserRole;
   profile: Profile;
 }
 
-export default function Products({ shopId }: ProductsProps) {
-  // To satisfy build, we can just log them
-  console.log(userRole, profile); 
+export default function Products({ shopId, userRole, profile }: ProductsProps) {
+  // We can log these to satisfy the linter, or use them
+  console.log('Products page loaded for user role:', userRole, 'and profile:', profile);
 
   const [products, setProducts] = useState<Product[]>([]);
+  // --- (rest of the component state) ---
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -46,11 +48,11 @@ export default function Products({ shopId }: ProductsProps) {
       if (editingProduct) {
         const { error } = await supabase.from('products').update(productData).eq('id', editingProduct.id);
         if (error) throw new Error(error.message);
-        alert('Product updated!');
+        alert('Product updated successfully!');
       } else {
         const { data: newProduct, error } = await supabase.from('products').insert(productData).select().single();
         if (error || !newProduct) throw new Error(error?.message || 'Failed to create product.');
-        alert('Product added! Please add variants next.');
+        alert('Parent Product added! Please add variants next.');
         setSelectedProduct(newProduct as Product);
         setShowVariantModal(true);
       }
@@ -87,7 +89,9 @@ export default function Products({ shopId }: ProductsProps) {
              {loading ? 'Refreshing...' : 'Refresh List'}
            </button>
            
-          {loading ? (<p className="py-10 text-center text-slate-500 dark:text-slate-400">Loading...</p>) : (
+          {loading ? (
+            <p className="py-10 text-center text-slate-500 dark:text-slate-400">Loading products...</p>
+          ) : (
             <>
               <div className="mt-4 hidden md:block flow-root overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
@@ -111,6 +115,7 @@ export default function Products({ shopId }: ProductsProps) {
                   </tbody>
                 </table>
               </div>
+
               <div className="mt-4 space-y-4 md:hidden">
                 {products.length === 0 ? (<p className="py-10 text-center text-slate-500 dark:text-slate-400">No products yet.</p>) : (
                   products.map((product) => (

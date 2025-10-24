@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole } from '../appTypes'; // FIX
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; // FIX
+import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole } from '../appTypes';
+// FIX: Removed unused 'X' icon
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; 
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 import ApplyDiscountModal from '../components/ApplyDiscountModal';
@@ -17,16 +18,15 @@ type CartItemVariant = ProductVariant & {
 
 interface PointOfSaleProps {
   shopId: string;
-  profile: Profile; // Keeping profile and userRole for future use
+  profile: Profile;
   userRole: UserRole;
 }
 
 export default function PointOfSale({ shopId, profile, userRole }: PointOfSaleProps) {
-  // Log to satisfy build
-  console.log(profile, userRole); 
+  // Log props to satisfy build
+  console.log(profile, userRole);
 
   const [variants, setVariants] = useState<ProductVariant[]>([]);
-  // ... (rest of the file is identical to the one that was working for you)
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [cart, setCart] = useState<CartItemVariant[]>([]);
