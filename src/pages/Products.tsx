@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Product, UserRole, Profile } from '../appTypes'; // Re-added Profile
+import type { Product, UserRole, Profile } from '../appTypes';
 import { Edit, Package, Tag } from 'lucide-react';
 import ProductVariantModal from '../components/ProductVariantModal';
 
-// --- FIX: Re-add profile and userRole to the props interface ---
 interface ProductsProps {
   shopId: string;
   userRole: UserRole;
@@ -13,11 +12,9 @@ interface ProductsProps {
 }
 
 export default function Products({ shopId, userRole, profile }: ProductsProps) {
-  // We can log these to satisfy the linter, or use them
-  console.log('Products page loaded for user role:', userRole, 'and profile:', profile);
-
+  // FIX: Removed console.log
+  
   const [products, setProducts] = useState<Product[]>([]);
-  // --- (rest of the component state) ---
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);

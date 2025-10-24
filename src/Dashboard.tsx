@@ -27,13 +27,12 @@ interface DashboardProps {
 export default function Dashboard({ profile }: DashboardProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // --- FIX: Check for trial status before setting page ---
+  // --- FIX: This variable must be available to all sub-components ---
   const isSubscriptionActive = profile.is_super_admin || profile.is_active;
 
   const [currentPage, setCurrentPage] = useState<Page>(
     profile.is_super_admin ? 'admin_dashboard' : 'overview'
   );
-  // --- END FIX ---
 
   const userRole: UserRole = profile.role;
   const shopId = profile.shop_id;
@@ -52,11 +51,9 @@ export default function Dashboard({ profile }: DashboardProps) {
       userRole: userRole 
     };
 
-    // --- FIX: If subscription is not active, force the expired page ---
     if (!isSubscriptionActive) {
         return <SubscriptionExpired />;
     }
-    // --- END FIX ---
 
     switch (currentPage) {
       case 'admin_dashboard': return <SuperAdminDashboard />;
@@ -118,7 +115,6 @@ export default function Dashboard({ profile }: DashboardProps) {
           {isSuperAdmin ? 'PLATFORM ADMIN' : `Role: ${userRole}`} | {profile.full_name}
       </p>
 
-      {/* --- FIX: Hide navigation if subscription is expired --- */}
       {isSubscriptionActive ? (
         <nav className="flex-1 space-y-1">
           {!isSuperAdmin && <NavLink pageName="pos" label="New Sale (POS)" icon={ShoppingCart} isPrimary={true} />}
@@ -140,11 +136,11 @@ export default function Dashboard({ profile }: DashboardProps) {
           </div>
           
           <div className="pt-2">
-            <h3 className="px-3 text-xs font-semibold uppercase text-slate-500 tracking-wider">Management</h3>
-              <div className="mt-1 space-y-1">
-                {isNotCashier && (<><NavLink pageName="products" label="Products" icon={Package} isSubItem={true}/><NavLink pageName="customers" label="Customers" icon={UserPlus} isSubItem={true}/><NavLink pageName="credit" label="Credit Payments" icon={CreditCard} isSubItem={true}/></>)}
-                {userRole === 'owner' && (<NavLink pageName="staff_management" label="Staff Management" icon={Users} isSubItem={true}/>)}
-            </div>
+           <h3 className="px-3 text-xs font-semibold uppercase text-slate-500 tracking-wider">Management</h3>
+            <div className="mt-1 space-y-1">
+              {isNotCashier && (<><NavLink pageName="products" label="Products" icon={Package} isSubItem={true}/><NavLink pageName="customers" label="Customers" icon={UserPlus} isSubItem={true}/><NavLink pageName="credit" label="Credit Payments" icon={CreditCard} isSubItem={true}/></>)}
+              {userRole === 'owner' && (<NavLink pageName="staff_management" label="Staff Management" icon={Users} isSubItem={true}/>)}
+           </div>
           </div>
         </nav>
       ) : (
@@ -152,7 +148,6 @@ export default function Dashboard({ profile }: DashboardProps) {
           <p className="text-sm font-medium text-red-600 dark:text-red-400">Your subscription is inactive. Please upgrade to restore access.</p>
         </div>
       )}
-      {/* --- END FIX --- */}
 
       <div className="mt-auto border-t border-slate-200 dark:border-slate-700 pt-4 space-y-2">
           <div className="px-3">

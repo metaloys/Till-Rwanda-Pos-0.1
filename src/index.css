@@ -1,20 +1,19 @@
+/* src/index.css */
 @import "tailwindcss";
 
 body {
   font-family: 'Inter', sans-serif;
   @apply font-sans antialiased;
   
-  /* LIGHT MODE (Default) */
+  /* 3. SET LIGHT/DARK DEFAULTS */
   @apply bg-slate-50 text-slate-800;
-  
-  /* DARK MODE */
   @apply dark:bg-slate-900 dark:text-slate-300;
   
   /* Smooth color transitions */
   @apply transition-colors duration-200;
 }
 
-/* Helper classes with Dark Mode support */
+/* 4. UPDATE HELPERS FOR DARK MODE */
 .label-style {
   @apply block text-sm font-medium text-slate-700 dark:text-slate-300;
 }
@@ -37,4 +36,13 @@ body {
 }
 .payment-button {
   @apply flex w-full items-center justify-center rounded-md px-3 py-2.5 text-sm font-semibold shadow-sm disabled:opacity-50 transition-colors;
+}
+
+/* 5. DEFAULT CARD STYLING */
+.card {
+  @apply rounded-lg bg-white shadow-lg;
+  @apply dark:bg-slate-800;
+}
+.card-header {
+  @apply text-lg font-semibold text-slate-900 dark:text-white;
 }

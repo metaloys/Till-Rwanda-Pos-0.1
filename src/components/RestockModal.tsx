@@ -42,20 +42,20 @@ export default function RestockModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+      <div className="relative w-full max-w-sm rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl">
+        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
           <X size={20} />
         </button>
 
-        <h2 className="mb-4 flex items-center text-xl font-bold text-slate-900">
+        <h2 className="mb-4 flex items-center text-xl font-bold text-slate-900 dark:text-white">
           <PlusCircle className="mr-2 h-5 w-5 text-green-600" />
           Restock Variant
         </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Product: <span className="font-medium text-indigo-600">{variant.name}</span>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          Product: <span className="font-medium text-indigo-600 dark:text-indigo-400">{variant.name}</span>
         </p>
-        <p className="mt-1 text-sm text-slate-500">
-          Current Stock: <span className="font-medium text-slate-900">{variant.stock_quantity}</span>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Current Stock: <span className="font-medium text-slate-900 dark:text-white">{variant.stock_quantity}</span>
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">

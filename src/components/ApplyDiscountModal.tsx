@@ -41,12 +41,12 @@ export default function ApplyDiscountModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+      <div className="relative w-full max-w-sm rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl">
+        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
           <X size={20} />
         </button>
 
-        <h2 className="mb-4 flex items-center text-xl font-bold text-slate-900">
+        <h2 className="mb-4 flex items-center text-xl font-bold text-slate-900 dark:text-white">
           <Tag className="mr-2 h-5 w-5 text-indigo-600" />
           Apply Cart Discount
         </h2>

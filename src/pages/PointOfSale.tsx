@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole } from '../appTypes';
-// FIX: Removed unused 'X' icon
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; 
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
-import ApplyDiscountModal from '../components/ApplyDiscountModal';
+import ApplyDiscountModal from '../components/ApplyDiscountModal'; // 1. IMPORT
 import { toast } from 'react-hot-toast';
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -23,8 +22,8 @@ interface PointOfSaleProps {
 }
 
 export default function PointOfSale({ shopId, profile, userRole }: PointOfSaleProps) {
-  // Log props to satisfy build
-  console.log(profile, userRole);
+  // Log props to satisfy build/linting
+  console.log("POS loaded for:", profile.full_name, "Role:", userRole);
 
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -37,7 +36,7 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   const [lastSaleDetails, setLastSaleDetails] = useState<React.ComponentProps<typeof ReceiptModal>['saleDetails']>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
-  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false); // 2. ADD STATE
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0); 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -84,16 +83,17 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   const totalDiscountAmount = subTotal - cartTotal;
   const filteredVariants = useMemo(() => { if (!searchTerm) return variants; const lowerCaseSearch = searchTerm.toLowerCase(); return variants.filter(v => v.name?.toLowerCase().includes(lowerCaseSearch) || v.attribute_1?.toLowerCase().includes(lowerCaseSearch) || v.attribute_2?.toLowerCase().includes(lowerCaseSearch)); }, [variants, searchTerm]);
 
+  // --- 3. UPDATE DISCOUNT HANDLER ---
   const handleApplyDiscount = (discount: number) => {
     if (isNaN(discount) || discount < 0 || discount > 100) { toast.error('Invalid percentage.'); return; }
     const newCart = cart.map(item => { const discountedPrice = item.price * (1 - discount / 100); return { ...item, discount_percentage: discount, final_price: discountedPrice } as CartItemVariant; });
     setCartDiscountPercent(discount);
     setCart(newCart);
-    setShowDiscountModal(false);
+    setShowDiscountModal(false); // Close the modal
     toast.success(`Discount of ${discount}% applied.`);
   };
-
   const handleOpenDiscountModal = () => { if (cart.length === 0) return toast.error('Add items to cart first.'); setShowDiscountModal(true); }
+  // --- END UPDATE ---
 
   const handleCheckout = async (paymentMethod: PaymentMethod, transactionRef: string | null) => {
     if (cart.length === 0) return toast.error('Cart is empty!');
@@ -125,6 +125,7 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
 
   return (
     <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 h-[calc(100vh-9rem)]">
+      
       <div className="md:col-span-7 h-full overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-4 shadow-lg order-2 md:order-1">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Products & Variants</h2>
         <div className="relative mt-4"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /><input type="text" placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="input-field w-full rounded-lg" /></div>
@@ -148,6 +149,7 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
           <div className="mb-2 flex items-center justify-between text-sm text-red-600 dark:text-red-500"><span className="font-medium">Discount:</span><span className="font-bold">{cartDiscountPercent}% (-{totalDiscountAmount.toLocaleString()} RWF)</span></div>
           <div className="mb-2 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400"><span className="font-medium">Subtotal:</span><span>{subTotal.toLocaleString()} RWF</span></div>
           <div className="mb-4 flex items-center justify-between text-xl font-bold text-slate-900 dark:text-white"><span>Total Due:</span><span>{cartTotal.toLocaleString()} RWF</span></div>
+          {/* --- 4. BUTTON NOW OPENS MODAL --- */}
           <button onClick={handleOpenDiscountModal} disabled={cart.length === 0 || isProcessing} className="mb-4 flex w-full items-center justify-center rounded-md bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-indigo-200 disabled:opacity-50 dark:bg-slate-700 dark:text-indigo-300 dark:hover:bg-slate-600"><Tag className="mr-2 h-4 w-4" /> Apply Discount ({cartDiscountPercent}%)</button>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3"><button onClick={() => handleOpenPaymentModal('cash')} disabled={isProcessing || cart.length === 0} className="payment-button bg-green-600 hover:bg-green-700 text-white"><DollarSign className="mr-2 h-5 w-5" /> Cash</button><button onClick={() => handleOpenPaymentModal('mtn_momo')} disabled={isProcessing || cart.length === 0} className="payment-button bg-yellow-500 hover:bg-yellow-600 text-slate-900"><Smartphone className="mr-2 h-5 w-5" /> MTN MoMo</button></div>
@@ -158,6 +160,7 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
       </div>
       <ReceiptModal isOpen={showReceipt} onClose={() => setShowReceipt(false)} saleDetails={lastSaleDetails} />
       <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onConfirm={handleCheckout} total={cartTotal} paymentMethod={selectedPaymentMethod} isProcessing={isProcessing} />
+      {/* --- 5. RENDER THE NEW MODAL --- */}
       <ApplyDiscountModal isOpen={showDiscountModal} onClose={() => setShowDiscountModal(false)} onConfirm={handleApplyDiscount} currentDiscount={cartDiscountPercent} isProcessing={isProcessing} />
     </div>
   );

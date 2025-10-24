@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -11,9 +12,8 @@
 
     <title>TillRwanda PoS</title>
 
-    <!-- 3. ADD DARK MODE SCRIPT -->
+    <!-- 2. ADD DARK MODE SCRIPT -->
     <script>
-      // This script checks the user's system preference and applies 'dark' class instantly
       if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark')
       } else {
