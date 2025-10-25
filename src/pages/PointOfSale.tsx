@@ -4,7 +4,8 @@ import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole } from 
 import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
-import ApplyDiscountModal from '../components/ApplyDiscountModal'; // 1. IMPORT
+import ApplyDiscountModal from '../components/ApplyDiscountModal';
+import QuantityModal from '../components/QuantityModal'; // 1. IMPORT THE NEW MODAL
 import { toast } from 'react-hot-toast';
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -23,7 +24,7 @@ interface PointOfSaleProps {
 
 export default function PointOfSale({ shopId, profile, userRole }: PointOfSaleProps) {
   // Log props to satisfy build/linting
-  console.log("POS loaded for:", profile.full_name, "Role:", userRole);
+  console.log(profile, userRole);
 
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -36,9 +37,14 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   const [lastSaleDetails, setLastSaleDetails] = useState<React.ComponentProps<typeof ReceiptModal>['saleDetails']>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
-  const [showDiscountModal, setShowDiscountModal] = useState(false); // 2. ADD STATE
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0); 
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // --- 2. NEW STATE FOR QUANTITY MODAL ---
+  const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
+  const [selectedVariantForQuantity, setSelectedVariantForQuantity] = useState<ProductVariant | null>(null);
+  // --- END NEW STATE ---
 
   async function fetchVariants() {
     setLoadingProducts(true);
@@ -64,18 +70,48 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   
   useEffect(() => { if (shopId) { fetchVariants(); fetchCustomers(); } }, [shopId]);
 
+  // --- 3. UPDATED addToCart LOGIC ---
   const addToCart = (variantToAdd: ProductVariant) => {
     const existingItem = cart.find((item) => item.id === variantToAdd.id);
-    const itemDiscount = cartDiscountPercent;
-    const itemPrice = variantToAdd.price;
-    const discountedPrice = itemPrice * (1 - itemDiscount / 100);
+
     if (existingItem) {
-      if (existingItem.quantity + 1 > variantToAdd.stock_quantity) { toast.error(`Not enough stock for ${variantToAdd.name}.`); return; }
+      // If item is already in cart, just add 1
+      if (existingItem.quantity + 1 > variantToAdd.stock_quantity) {
+        toast.error(`Not enough stock for ${variantToAdd.name}.`); 
+        return;
+      }
       setCart(cart.map((item) => item.id === variantToAdd.id ? { ...item, quantity: item.quantity + 1 } : item));
     } else {
-      setCart([...cart, { ...variantToAdd, quantity: 1, discount_percentage: itemDiscount, final_price: discountedPrice } as CartItemVariant]);
+      // If item is NEW, open the quantity modal
+      setSelectedVariantForQuantity(variantToAdd);
+      setIsQuantityModalOpen(true);
     }
   };
+
+  // --- 4. NEW FUNCTION to handle modal confirmation ---
+  const handleConfirmQuantity = (quantity: number) => {
+    if (!selectedVariantForQuantity) return;
+    
+    if (quantity > selectedVariantForQuantity.stock_quantity) {
+       toast.error(`Not enough stock. Only ${selectedVariantForQuantity.stock_quantity} available.`);
+       return;
+    }
+    
+    const itemDiscount = cartDiscountPercent;
+    const itemPrice = selectedVariantForQuantity.price;
+    const discountedPrice = itemPrice * (1 - itemDiscount / 100);
+
+    setCart([...cart, { 
+      ...selectedVariantForQuantity, 
+      quantity: quantity, 
+      discount_percentage: itemDiscount, 
+      final_price: discountedPrice 
+    } as CartItemVariant]);
+    
+    setIsQuantityModalOpen(false);
+    setSelectedVariantForQuantity(null);
+  };
+  // --- END NEW LOGIC ---
 
   const removeFromCart = (variantId: number) => { setCart(cart.filter((item) => item.id !== variantId)); };
   const subTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -83,17 +119,16 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   const totalDiscountAmount = subTotal - cartTotal;
   const filteredVariants = useMemo(() => { if (!searchTerm) return variants; const lowerCaseSearch = searchTerm.toLowerCase(); return variants.filter(v => v.name?.toLowerCase().includes(lowerCaseSearch) || v.attribute_1?.toLowerCase().includes(lowerCaseSearch) || v.attribute_2?.toLowerCase().includes(lowerCaseSearch)); }, [variants, searchTerm]);
 
-  // --- 3. UPDATE DISCOUNT HANDLER ---
   const handleApplyDiscount = (discount: number) => {
     if (isNaN(discount) || discount < 0 || discount > 100) { toast.error('Invalid percentage.'); return; }
     const newCart = cart.map(item => { const discountedPrice = item.price * (1 - discount / 100); return { ...item, discount_percentage: discount, final_price: discountedPrice } as CartItemVariant; });
     setCartDiscountPercent(discount);
     setCart(newCart);
-    setShowDiscountModal(false); // Close the modal
+    setShowDiscountModal(false);
     toast.success(`Discount of ${discount}% applied.`);
   };
+
   const handleOpenDiscountModal = () => { if (cart.length === 0) return toast.error('Add items to cart first.'); setShowDiscountModal(true); }
-  // --- END UPDATE ---
 
   const handleCheckout = async (paymentMethod: PaymentMethod, transactionRef: string | null) => {
     if (cart.length === 0) return toast.error('Cart is empty!');
@@ -149,7 +184,6 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
           <div className="mb-2 flex items-center justify-between text-sm text-red-600 dark:text-red-500"><span className="font-medium">Discount:</span><span className="font-bold">{cartDiscountPercent}% (-{totalDiscountAmount.toLocaleString()} RWF)</span></div>
           <div className="mb-2 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400"><span className="font-medium">Subtotal:</span><span>{subTotal.toLocaleString()} RWF</span></div>
           <div className="mb-4 flex items-center justify-between text-xl font-bold text-slate-900 dark:text-white"><span>Total Due:</span><span>{cartTotal.toLocaleString()} RWF</span></div>
-          {/* --- 4. BUTTON NOW OPENS MODAL --- */}
           <button onClick={handleOpenDiscountModal} disabled={cart.length === 0 || isProcessing} className="mb-4 flex w-full items-center justify-center rounded-md bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-indigo-200 disabled:opacity-50 dark:bg-slate-700 dark:text-indigo-300 dark:hover:bg-slate-600"><Tag className="mr-2 h-4 w-4" /> Apply Discount ({cartDiscountPercent}%)</button>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3"><button onClick={() => handleOpenPaymentModal('cash')} disabled={isProcessing || cart.length === 0} className="payment-button bg-green-600 hover:bg-green-700 text-white"><DollarSign className="mr-2 h-5 w-5" /> Cash</button><button onClick={() => handleOpenPaymentModal('mtn_momo')} disabled={isProcessing || cart.length === 0} className="payment-button bg-yellow-500 hover:bg-yellow-600 text-slate-900"><Smartphone className="mr-2 h-5 w-5" /> MTN MoMo</button></div>
@@ -160,8 +194,16 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
       </div>
       <ReceiptModal isOpen={showReceipt} onClose={() => setShowReceipt(false)} saleDetails={lastSaleDetails} />
       <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onConfirm={handleCheckout} total={cartTotal} paymentMethod={selectedPaymentMethod} isProcessing={isProcessing} />
-      {/* --- 5. RENDER THE NEW MODAL --- */}
       <ApplyDiscountModal isOpen={showDiscountModal} onClose={() => setShowDiscountModal(false)} onConfirm={handleApplyDiscount} currentDiscount={cartDiscountPercent} isProcessing={isProcessing} />
+      
+      {/* --- 5. RENDER THE NEW QUANTITY MODAL --- */}
+      <QuantityModal
+        isOpen={isQuantityModalOpen}
+        onClose={() => setIsQuantityModalOpen(false)}
+        onConfirm={handleConfirmQuantity}
+        variant={selectedVariantForQuantity}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 }
