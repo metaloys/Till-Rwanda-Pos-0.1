@@ -14,7 +14,7 @@ interface ProductsProps {
 
 export default function Products({ shopId, userRole, profile }: ProductsProps) {
   // Log props to satisfy build
-  console.log(userRole, profile);
+  console.log("Products page loaded for:", profile.full_name, "Role:", userRole);
   
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +44,6 @@ export default function Products({ shopId, userRole, profile }: ProductsProps) {
     setIsProcessing(true);
     const productData = { name, category: category || null, has_variants: true, shop_id: shopId };
     
-    // --- FIX: This is now a real Promise ---
     const promise = (async () => {
       if (editingProduct) {
         const { error } = await supabase.from('products').update(productData).eq('id', editingProduct.id);
@@ -56,7 +55,6 @@ export default function Products({ shopId, userRole, profile }: ProductsProps) {
         return { data: newProduct, isEditing: false };
       }
     })();
-    // --- END FIX ---
 
     toast.promise(promise, {
       loading: 'Saving product...',
@@ -103,11 +101,15 @@ export default function Products({ shopId, userRole, profile }: ProductsProps) {
              {loading ? 'Refreshing...' : 'Refresh List'}
            </button>
            
-          {loading ? (<p className="py-10 text-center text-slate-500 dark:text-slate-400">Loading...</p>) : (
+          {loading ? (
+            <p className="py-10 text-center text-slate-500 dark:text-slate-400">Loading products...</p>
+          ) : (
             <>
               <div className="mt-4 hidden md:block flow-root overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                  <thead className="bg-slate-50 dark:bg-slate-700"><tr><th className="th-style">Name</th><th className="th-style">Category</th><th classNameT="th-style">Options?</th><th className="th-style">Actions</th></tr></thead>
+                  {/* --- FIX: Corrected classNameT to className --- */}
+                  <thead className="bg-slate-50 dark:bg-slate-700"><tr><th className="th-style">Name</th><th className="th-style">Category</th><th className="th-style">Options?</th><th className="th-style">Actions</th></tr></thead>
+                  {/* --- END FIX --- */}
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
                     {products.length === 0 ? (
                       <tr><td colSpan={4} className="td-style text-center text-slate-500 dark:text-slate-400">No products yet.</td></tr>
