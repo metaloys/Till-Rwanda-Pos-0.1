@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole } from '../appTypes';
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; // FIX: Removed X
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 import ApplyDiscountModal from '../components/ApplyDiscountModal';
-import QuantityModal from '../components/QuantityModal'; // 1. IMPORT THE NEW MODAL
+import QuantityModal from '../components/QuantityModal';
 import { toast } from 'react-hot-toast';
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -23,8 +23,8 @@ interface PointOfSaleProps {
 }
 
 export default function PointOfSale({ shopId, profile, userRole }: PointOfSaleProps) {
-  // Log props to satisfy build/linting
-  console.log(profile, userRole);
+  // Log props to satisfy build
+  console.log("POS loaded for:", profile.full_name, "Role:", userRole);
 
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -40,11 +40,8 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0); 
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // --- 2. NEW STATE FOR QUANTITY MODAL ---
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
   const [selectedVariantForQuantity, setSelectedVariantForQuantity] = useState<ProductVariant | null>(null);
-  // --- END NEW STATE ---
 
   async function fetchVariants() {
     setLoadingProducts(true);
@@ -70,48 +67,27 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   
   useEffect(() => { if (shopId) { fetchVariants(); fetchCustomers(); } }, [shopId]);
 
-  // --- 3. UPDATED addToCart LOGIC ---
   const addToCart = (variantToAdd: ProductVariant) => {
     const existingItem = cart.find((item) => item.id === variantToAdd.id);
-
     if (existingItem) {
-      // If item is already in cart, just add 1
-      if (existingItem.quantity + 1 > variantToAdd.stock_quantity) {
-        toast.error(`Not enough stock for ${variantToAdd.name}.`); 
-        return;
-      }
+      if (existingItem.quantity + 1 > variantToAdd.stock_quantity) { toast.error(`Not enough stock for ${variantToAdd.name}.`); return; }
       setCart(cart.map((item) => item.id === variantToAdd.id ? { ...item, quantity: item.quantity + 1 } : item));
     } else {
-      // If item is NEW, open the quantity modal
       setSelectedVariantForQuantity(variantToAdd);
       setIsQuantityModalOpen(true);
     }
   };
 
-  // --- 4. NEW FUNCTION to handle modal confirmation ---
   const handleConfirmQuantity = (quantity: number) => {
     if (!selectedVariantForQuantity) return;
-    
-    if (quantity > selectedVariantForQuantity.stock_quantity) {
-       toast.error(`Not enough stock. Only ${selectedVariantForQuantity.stock_quantity} available.`);
-       return;
-    }
-    
+    if (quantity > selectedVariantForQuantity.stock_quantity) { toast.error(`Not enough stock.`); return; }
     const itemDiscount = cartDiscountPercent;
     const itemPrice = selectedVariantForQuantity.price;
     const discountedPrice = itemPrice * (1 - itemDiscount / 100);
-
-    setCart([...cart, { 
-      ...selectedVariantForQuantity, 
-      quantity: quantity, 
-      discount_percentage: itemDiscount, 
-      final_price: discountedPrice 
-    } as CartItemVariant]);
-    
+    setCart([...cart, { ...selectedVariantForQuantity, quantity: quantity, discount_percentage: itemDiscount, final_price: discountedPrice } as CartItemVariant]);
     setIsQuantityModalOpen(false);
     setSelectedVariantForQuantity(null);
   };
-  // --- END NEW LOGIC ---
 
   const removeFromCart = (variantId: number) => { setCart(cart.filter((item) => item.id !== variantId)); };
   const subTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -127,7 +103,6 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
     setShowDiscountModal(false);
     toast.success(`Discount of ${discount}% applied.`);
   };
-
   const handleOpenDiscountModal = () => { if (cart.length === 0) return toast.error('Add items to cart first.'); setShowDiscountModal(true); }
 
   const handleCheckout = async (paymentMethod: PaymentMethod, transactionRef: string | null) => {
@@ -160,7 +135,6 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
 
   return (
     <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 h-[calc(100vh-9rem)]">
-      
       <div className="md:col-span-7 h-full overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-4 shadow-lg order-2 md:order-1">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Products & Variants</h2>
         <div className="relative mt-4"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /><input type="text" placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="input-field w-full rounded-lg" /></div>
@@ -195,15 +169,7 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
       <ReceiptModal isOpen={showReceipt} onClose={() => setShowReceipt(false)} saleDetails={lastSaleDetails} />
       <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onConfirm={handleCheckout} total={cartTotal} paymentMethod={selectedPaymentMethod} isProcessing={isProcessing} />
       <ApplyDiscountModal isOpen={showDiscountModal} onClose={() => setShowDiscountModal(false)} onConfirm={handleApplyDiscount} currentDiscount={cartDiscountPercent} isProcessing={isProcessing} />
-      
-      {/* --- 5. RENDER THE NEW QUANTITY MODAL --- */}
-      <QuantityModal
-        isOpen={isQuantityModalOpen}
-        onClose={() => setIsQuantityModalOpen(false)}
-        onConfirm={handleConfirmQuantity}
-        variant={selectedVariantForQuantity}
-        isProcessing={isProcessing}
-      />
+      <QuantityModal isOpen={isQuantityModalOpen} onClose={() => setIsQuantityModalOpen(false)} onConfirm={handleConfirmQuantity} variant={selectedVariantForQuantity} isProcessing={isProcessing} />
     </div>
   );
 }

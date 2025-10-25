@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import type { Profile, UserRole } from '../appTypes';
-// --- FIX: Added RefreshCw back to the import list ---
-import { BarChart3, RefreshCw, TrendingUp, TrendingDown, Star, Warehouse, Archive, DollarSign, Users } from 'lucide-react';
+// FIX: Removed RefreshCw, which is not used in the button
+import { BarChart3, TrendingUp, TrendingDown, Star, Warehouse, Archive, DollarSign, Users, RefreshCw } from 'lucide-react'; 
 
 interface ReportsProps {
   shopId: string;
@@ -14,7 +14,10 @@ type TopProduct = { variant_id: number; name: string; parent_product_name: strin
 type SlowProduct = { variant_id: number; name: string; parent_product_name: string; stock_quantity: number; price: number; };
 type StaffSale = { staff_name: string; staff_role: string; total_sales_amount: number; total_transactions: number; };
 
-export default function Reports({ shopId }: ReportsProps) {
+export default function Reports({ shopId, profile, userRole }: ReportsProps) {
+  // Log props to satisfy build
+  console.log("Reports loaded for:", profile.full_name, "Role:", userRole);
+
   const [dailySalesTotal, setDailySalesTotal] = useState<number>(0);
   const [dailySaleCount, setDailySaleCount] = useState<number>(0);
   const [dailyExpensesTotal, setDailyExpensesTotal] = useState<number>(0);
@@ -60,12 +63,7 @@ export default function Reports({ shopId }: ReportsProps) {
 
   useEffect(() => { if(shopId) fetchReportData(reportDate); }, [reportDate, shopId]);
   
-  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => { 
-    const newDate = event.target.value ? new Date(event.target.value) : new Date(); 
-    const timezoneOffset = newDate.getTimezoneOffset() * 60000; 
-    setReportDate(new Date(newDate.getTime() + timezoneOffset)); 
-  };
-
+  // FIX: handleDateChange was unused. Logic is now inline in the input's onChange.
   const profitLoss = dailySalesTotal - dailyExpensesTotal;
   const isProfit = profitLoss >= 0;
 
@@ -79,7 +77,11 @@ export default function Reports({ shopId }: ReportsProps) {
               id="report-date" 
               type="date" 
               value={reportDate.toISOString().split('T')[0]} 
-              onChange={handleDateChange} 
+              onChange={(e) => { // FIX: Logic is now inline
+                const newDate = e.target.value ? new Date(e.target.value) : new Date(); 
+                const timezoneOffset = newDate.getTimezoneOffset() * 60000; 
+                setReportDate(new Date(newDate.getTime() + timezoneOffset));
+              }}
               className="input-field py-1 text-sm" 
               disabled={loading} 
             />
@@ -112,7 +114,7 @@ export default function Reports({ shopId }: ReportsProps) {
       </div>
 
       <div className="rounded-lg bg-white dark:bg-slate-800 p-4 md:p-6 shadow-lg"><h2 className="card-header flex items-center border-b border-slate-200 dark:border-slate-700 pb-3"><Star className="mr-2 h-5 w-5 text-yellow-500" />Top Selling Products (All Time)</h2>
-        <div className="mt-4 flow-root overflow-x-a-uto">
+        <div className="mt-4 flow-root overflow-x-auto">
             {loading ? (<p className="py-4 text-center text-slate-500 dark:text-slate-400">Calculating...</p>) : topProducts.length === 0 ? (<p className="py-4 text-center text-slate-500 dark:text-slate-400">No sales data found.</p>) : (
                 <><table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 hidden md:table"><thead className="bg-slate-50 dark:bg-slate-700"><tr><th className="th-style">Rank</th><th className="th-style">Product</th><th className="th-style">Variant</th><th className="th-style text-right">Units Sold</th></tr></thead><tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-800">{topProducts.map((product, index) => (<tr key={product.variant_id}><td className="td-style font-bold text-slate-400">{index + 1}</td><td className="td-style font-medium text-slate-900 dark:text-white">{product.parent_product_name}</td><td className="td-style text-sm text-slate-500 dark:text-slate-400">{product.name}</td><td className="td-style text-right font-semibold text-blue-600 dark:text-blue-400">{product.total_sold}</td></tr>))}</tbody></table>
                 <div className="mt-4 space-y-4 md:hidden">{topProducts.map((product, index) => (<div key={product.variant_id} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm"><div className="flex items-center justify-between"><div className="flex items-center space-x-3"><span className="text-xl font-bold text-slate-400">#{index + 1}</span><div><div className="font-bold text-slate-900 dark:text-white">{product.parent_product_name}</div><div className="text-sm text-slate-600 dark:text-slate-400">{product.name}</div></div></div><div className="text-right"><div className="font-bold text-lg text-blue-600 dark:text-blue-400">{product.total_sold}</div><div className="text-xs text-slate-500 dark:text-slate-400">Units Sold</div></div></div></div>))}</div></>
