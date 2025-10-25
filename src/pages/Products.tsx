@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import type { Product, UserRole, Profile } from '../appTypes';
 import { Edit, Package, Tag } from 'lucide-react';
 import ProductVariantModal from '../components/ProductVariantModal';
-import { toast } from 'react-hot-toast'; // Import toast
+import { toast } from 'react-hot-toast';
 
 interface ProductsProps {
   shopId: string;
@@ -13,9 +13,9 @@ interface ProductsProps {
 }
 
 export default function Products({ shopId, userRole, profile }: ProductsProps) {
-  // Log props to satisfy build/linting
-  console.log("Products page loaded for:", profile.full_name, "Role:", userRole);
-
+  // Log props to satisfy build
+  console.log(userRole, profile);
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -42,28 +42,31 @@ export default function Products({ shopId, userRole, profile }: ProductsProps) {
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
-    // has_variants is TRUE by default, as a parent product implies options
-    const productData = { name, category: category || null, has_variants: true, shop_id: shopId }; 
+    const productData = { name, category: category || null, has_variants: true, shop_id: shopId };
     
-    const promise = editingProduct 
-      ? supabase.from('products').update(productData).eq('id', editingProduct.id)
-      : supabase.from('products').insert(productData).select().single();
+    // --- FIX: This is now a real Promise ---
+    const promise = (async () => {
+      if (editingProduct) {
+        const { error } = await supabase.from('products').update(productData).eq('id', editingProduct.id);
+        if (error) throw error;
+        return { data: null, isEditing: true };
+      } else {
+        const { data: newProduct, error } = await supabase.from('products').insert(productData).select().single();
+        if (error || !newProduct) throw (error || new Error('Failed to create product.'));
+        return { data: newProduct, isEditing: false };
+      }
+    })();
+    // --- END FIX ---
 
     toast.promise(promise, {
       loading: 'Saving product...',
-      success: (response: any) => {
-        let newProduct = null;
-        if (!editingProduct && response.data) {
-          newProduct = response.data as Product;
-        }
-        
+      success: (result: any) => {
         cancelEditing();
         fetchProducts();
         setIsProcessing(false);
         
-        if (newProduct) {
-          // Automatically open the "Manage Options" modal for a new product
-          setSelectedProduct(newProduct);
+        if (!result.isEditing && result.data) {
+          setSelectedProduct(result.data as Product);
           setShowVariantModal(true);
           return 'Product added! Please add options now.';
         }
@@ -82,7 +85,7 @@ export default function Products({ shopId, userRole, profile }: ProductsProps) {
         <div className="rounded-lg bg-white dark:bg-slate-800 p-6 shadow-lg">
           <h2 className="card-header">{editingProduct ? `Edit ${editingProduct.name}` : 'Add New Product'}</h2>
           <form onSubmit={handleFormSubmit} className="mt-4 space-y-4">
-            <div><label htmlFor="name" className="label-style">Product Name (e.g., "Soda", "T-Shirt")</label><input id="name" type="text" required className="input-field" value={name} onChange={(e) => setName(e.target.value)} disabled={isProcessing}/></div>
+            <div><label htmlFor="name" className="label-style">Product Name (e.g., "Soda")</label><input id="name" type="text" required className="input-field" value={name} onChange={(e) => setName(e.target.value)} disabled={isProcessing}/></div>
             <div><label htmlFor="category" className="label-style">Category (Opt)</label><input id="category" type="text" className="input-field" value={category} onChange={(e) => setCategory(e.target.value)} disabled={isProcessing}/></div>
             <div className="flex items-center space-x-3">
               <button type="submit" className="flex-1 rounded-md bg-indigo-600 px-4 py-2 font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50" disabled={isProcessing}>
@@ -100,21 +103,20 @@ export default function Products({ shopId, userRole, profile }: ProductsProps) {
              {loading ? 'Refreshing...' : 'Refresh List'}
            </button>
            
-          {loading ? (
-            <p className="py-10 text-center text-slate-500 dark:text-slate-400">Loading products...</p>
-          ) : (
+          {loading ? (<p className="py-10 text-center text-slate-500 dark:text-slate-400">Loading...</p>) : (
             <>
               <div className="mt-4 hidden md:block flow-root overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                  <thead className="bg-slate-50 dark:bg-slate-700"><tr><th className="th-style">Name</th><th className="th-style">Category</th><th className="th-style">Actions</th></tr></thead>
+                  <thead className="bg-slate-50 dark:bg-slate-700"><tr><th className="th-style">Name</th><th className="th-style">Category</th><th classNameT="th-style">Options?</th><th className="th-style">Actions</th></tr></thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
                     {products.length === 0 ? (
-                      <tr><td colSpan={3} className="td-style text-center text-slate-500 dark:text-slate-400">No products yet.</td></tr>
+                      <tr><td colSpan={4} className="td-style text-center text-slate-500 dark:text-slate-400">No products yet.</td></tr>
                     ) : (
                       products.map((product) => (
                         <tr key={product.id}>
                           <td className="td-style font-medium text-slate-900 dark:text-white">{product.name}</td>
                           <td className="td-style text-slate-500 dark:text-slate-400">{product.category || 'N/A'}</td>
+                          <td className="td-style"><span className="text-purple-600 dark:text-purple-400 font-medium">Yes</span></td>
                           <td className="td-style space-x-2 whitespace-nowrap">
                             <button onClick={() => openVariantManagement(product)} disabled={isProcessing} className="action-button bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 dark:hover:bg-purple-900"><Package className="mr-1 h-3 w-3" /> Manage Options</button>
                             <button onClick={() => startEditing(product)} disabled={isProcessing} className="action-button bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-900"><Edit className="mr-1 h-3 w-3" /> Edit Product</button>
@@ -125,12 +127,14 @@ export default function Products({ shopId, userRole, profile }: ProductsProps) {
                   </tbody>
                 </table>
               </div>
-
               <div className="mt-4 space-y-4 md:hidden">
                 {products.length === 0 ? (<p className="py-10 text-center text-slate-500 dark:text-slate-400">No products yet.</p>) : (
                   products.map((product) => (
                     <div key={product.id} className="rounded-lg border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 p-4 shadow-sm">
-                      <div className="font-bold text-slate-900 dark:text-white">{product.name}</div>
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-slate-900 dark:text-white">{product.name}</div>
+                        <span className="rounded-full bg-purple-100 dark:bg-purple-900/50 px-2 py-0.5 text-xs font-semibold text-purple-700 dark:text-purple-300">Has Options</span>
+                      </div>
                       <div className="mt-2 text-sm text-slate-600 dark:text-slate-400">
                         <div className="flex items-center"><Tag className="mr-2 h-4 w-4" /> {product.category || 'No Category'}</div>
                       </div>

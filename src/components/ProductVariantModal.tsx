@@ -49,14 +49,8 @@ export default function ProductVariantModal({
   };
 
   useEffect(() => {
-    if (isOpen && product) {
-      fetchVariants(product.id);
-    } else {
-      setVariants([]);
-      // --- THIS IS THE FIX: Removed the extra "Form" ---
-      resetFormState(); 
-      // --- END FIX ---
-    }
+    if (isOpen && product) { fetchVariants(product.id); }
+    else { setVariants([]); resetFormState(); }
   }, [isOpen, product]);
 
   async function fetchVariants(productId: number) {
@@ -83,7 +77,7 @@ export default function ProductVariantModal({
         loading: 'Compressing image...',
         success: (compressedFile) => {
           setImageFile(compressedFile);
-          setCurrentImageUrl(URL.createObjectURL(compressedFile)); // Show preview
+          setCurrentImageUrl(URL.createObjectURL(compressedFile));
           return 'Image compressed successfully!';
         },
         error: (err) => {
@@ -111,9 +105,9 @@ export default function ProductVariantModal({
     e.preventDefault();
     if (!product) { toast.error("Error: No product selected."); return; }
     setIsProcessing(true);
-    let imageUrlToSave: string | null = currentImageUrl;
     
     const submitPromise = new Promise(async (resolve, reject) => {
+      let imageUrlToSave: string | null = currentImageUrl;
       try {
           if (imageFile) {
               const baseId = editingVariant?.id || product.id;
@@ -164,9 +158,64 @@ export default function ProductVariantModal({
   };
 
   const openDeleteModal = (variant: ProductVariant) => { setSelectedVariant(variant); setShowDeleteModal(true); };
-  const handleDeleteVariant = async () => { if (!product || !selectedVariant) return; setIsProcessing(true); const deletePromise = supabase.from('product_variants').delete().eq('id', selectedVariant.id); toast.promise(deletePromise, { loading: 'Deleting...', success: () => { fetchVariants(product.id); onVariantUpdate(); setIsProcessing(false); setShowDeleteModal(false); return 'Option deleted.'; }, error: (err) => { setIsProcessing(false); setShowDeleteModal(false); return `Error: ${err.message}`; } }); };
+  
+  const handleDeleteVariant = async () => { 
+    if (!product || !selectedVariant) return; 
+    setIsProcessing(true); 
+    
+    // --- FIX: This is now a real Promise ---
+    const deletePromise = (async () => {
+      const { error } = await supabase.from('product_variants').delete().eq('id', selectedVariant.id);
+      if (error) throw error;
+    })();
+    // --- END FIX ---
+
+    toast.promise(deletePromise, { 
+      loading: 'Deleting...', 
+      success: () => { 
+        fetchVariants(product.id); 
+        onVariantUpdate(); 
+        setIsProcessing(false); 
+        setShowDeleteModal(false); 
+        return 'Option deleted.'; 
+      }, 
+      error: (err) => { 
+        setIsProcessing(false); 
+        setShowDeleteModal(false); 
+        return `Error: ${err.message}`; 
+      } 
+    }); 
+  };
+  
   const handleOpenRestockModal = (variant: ProductVariant) => { setSelectedVariant(variant); setShowRestockModal(true); };
-  const handleConfirmRestock = async (amountToAdd: number) => { if (!selectedVariant || !product) return toast.error("No variant selected."); setIsProcessing(true); const restockPromise = supabase.rpc('update_stock', { variant_id_to_update: selectedVariant.id, quantity_change: amountToAdd }); toast.promise(restockPromise, { loading: 'Adding stock...', success: () => { fetchVariants(product.id); onVariantUpdate(); setShowRestockModal(false); setIsProcessing(false); return `${amountToAdd} units added.`; }, error: (err) => { setIsProcessing(false); setShowRestockModal(false); return `Error: ${err.message}`; } }); };
+  
+  const handleConfirmRestock = async (amountToAdd: number) => { 
+    if (!selectedVariant || !product) return toast.error("No variant selected."); 
+    setIsProcessing(true); 
+    
+    // --- FIX: This is now a real Promise ---
+    const restockPromise = (async () => {
+      const { error } = await supabase.rpc('update_stock', { variant_id_to_update: selectedVariant.id, quantity_change: amountToAdd });
+      if (error) throw error;
+    })();
+    // --- END FIX ---
+    
+    toast.promise(restockPromise, { 
+      loading: 'Adding stock...', 
+      success: () => { 
+        fetchVariants(product.id); 
+        onVariantUpdate(); 
+        setShowRestockModal(false); 
+        setIsProcessing(false); 
+        return `${amountToAdd} units added.`; 
+      }, 
+      error: (err) => { 
+        setIsProcessing(false); 
+        setShowRestockModal(false); 
+        return `Error: ${err.message}`; 
+      } 
+    }); 
+  };
 
   if (!isOpen || !product) return null;
 
@@ -220,7 +269,7 @@ export default function ProductVariantModal({
                                       <td className="td-style">{variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-10 w-10 rounded object-cover" /> ) : ( <div className="h-10 w-10 rounded bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-400">No Img</div> )}</td>
                                       <td className="td-style font-medium text-slate-900 dark:text-white">{variant.name}</td>
                                       <td className="td-style text-slate-600 dark:text-slate-300">{variant.price.toLocaleString()} RWF</td>
-                                      <td className={`td-style font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'}`}>{variant.stock_quantity}</td>
+                                      <td className={`td-style font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600 dark:text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>{variant.stock_quantity}</td>
                                       <td className="td-style text-right whitespace-nowrap">
                                           <button onClick={() => handleOpenRestockModal(variant)} disabled={isProcessing} className="action-button bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900"><PlusCircle className="h-4 w-4" /></button>
                                           <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-900 ml-2"><Edit className="h-4 w-4" /></button>
@@ -239,13 +288,12 @@ export default function ProductVariantModal({
                                   <div className="flex-1">
                                       <p className="font-bold text-slate-900 dark:text-white">{variant.name}</p>
                                       <p className="text-sm text-slate-700 dark:text-slate-300">{variant.price.toLocaleString()} RWF</p>
-                                      <p className={`text-sm font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'}`}>Stock: {variant.stock_quantity}</p>
+                                      <p className={`text-sm font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600 dark:text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>Stock: {variant.stock_quantity}</p>
                                   </div>
                               </div>
                               <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-200 dark:border-slate-700 pt-3">
                                   <button onClick={() => handleOpenRestockModal(variant)} disabled={isProcessing} className="action-button justify-center bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900"><PlusCircle className="mr-1.5 h-4 w-4" /> Restock</button>
                                   <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button justify-center bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-900"><Edit className="mr-1.5 h-4 w-4" /> Edit</button>
-
                                   <button onClick={() => openDeleteModal(variant)} disabled={isProcessing} className="action-button justify-center bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900"><Trash2 className="mr-1.5 h-4 w-4" /> Delete</button>
                               </div>
                           </div>

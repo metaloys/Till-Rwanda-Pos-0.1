@@ -31,7 +31,13 @@ export default function StaffManagement({ userRole, profile }: StaffManagementPr
 
   const handleRoleChange = async (targetProfile: Profile, newRole: UserRole) => { 
     setIsProcessing(true); 
-    const rolePromise = supabase.from('profiles').update({ role: newRole }).eq('id', targetProfile.id);
+    // --- FIX: This is now a real Promise ---
+    const rolePromise = (async () => {
+      const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', targetProfile.id);
+      if (error) throw error;
+    })();
+    // --- END FIX ---
+    
     toast.promise(rolePromise, {
         loading: 'Updating role...',
         success: () => { fetchStaffProfiles(); setIsProcessing(false); return 'Role updated.'; },
@@ -42,11 +48,23 @@ export default function StaffManagement({ userRole, profile }: StaffManagementPr
   const handleInviteStaff = async (e: FormEvent) => { 
     e.preventDefault(); if (!profile.shop_id) return toast.error("Shop ID not found."); 
     setIsProcessing(true); 
+    
+    // This is already a promise, so it's fine
     const invitePromise = supabase.functions.invoke('invite-staff', { body: JSON.stringify({ email: inviteEmail, role: inviteRole, shopId: profile.shop_id, ownerName: profile.full_name || 'Owner', }), headers: { 'Content-Type': 'application/json' }, });
+    
     toast.promise(invitePromise, {
         loading: 'Sending invitation...',
-        success: () => { setInviteEmail(''); fetchStaffProfiles(); setIsProcessing(false); return 'Invitation sent!'; },
-        error: (err) => { setIsProcessing(false); return `Invitation failed: ${err.message}`; }
+        success: (response: any) => {
+            if (response.data.error) throw new Error(response.data.error);
+            setInviteEmail(''); 
+            fetchStaffProfiles();
+            setIsProcessing(false);
+            return 'Invitation sent!';
+        },
+        error: (err) => {
+            setIsProcessing(false);
+            return `Invitation failed: ${err.message}`;
+        }
     });
   };
 
@@ -60,7 +78,6 @@ export default function StaffManagement({ userRole, profile }: StaffManagementPr
 
   const onConfirmAction = async () => {
     if (!confirmState) return;
-    
     const { action, profile: targetProfile } = confirmState;
     let promise: Promise<any>;
     let loadingMessage = 'Processing...';
@@ -114,23 +131,19 @@ export default function StaffManagement({ userRole, profile }: StaffManagementPr
                 <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700"><thead className="bg-slate-50 dark:bg-slate-700"><tr><th className="th-style">Name / Email</th><th className="th-style">Member Since</th><th className="th-style">Current Role</th><th className="th-style">Status</th><th className="th-style">Actions</th></tr></thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
                   {staffProfiles.length === 0 ? (<tr><td colSpan={5} className="td-style text-center text-slate-500 dark:text-slate-400">No other staff members found.</td></tr>) : (
-                    staffProfiles.map((staffProfile) => (<tr key={staffProfile.id}>
-                      <td className="td-style font-medium text-slate-900 dark:text-white">{staffProfile.full_name || staffProfile.id}<p className="text-xs text-slate-500 dark:text-slate-400">{staffProfile.id}</p></td>
-                      <td className="td-style text-sm text-slate-500 dark:text-slate-400">{new Date(staffProfile.created_at).toLocaleDateString()}</td>
-                      <td className={`td-style font-semibold capitalize ${staffProfile.role === 'manager' ? 'text-indigo-600 dark:text-indigo-400' : 'text-blue-600 dark:text-blue-400'}`}>{staffProfile.role}</td>
-                      <td className="td-style"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${staffProfile.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}>{staffProfile.status.toUpperCase()}</span></td>
-                      <td className="td-style space-x-2 whitespace-nowrap">
-                        <select value={staffProfile.role} onChange={(e) => handleRoleChange(staffProfile, e.target.value as UserRole)} disabled={isProcessing || staffProfile.role === 'owner'} className="input-field py-1 text-sm w-32 inline-block disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:opacity-80">
-                          {ROLE_OPTIONS.map((role) => ( <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option> ))}
-                        </select>
-                        {staffProfile.status === 'active' ? (
-                            <button onClick={() => handleToggleActive(staffProfile, false)} disabled={isProcessing || staffProfile.role === 'owner'} className="action-button bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900 disabled:opacity-50"><UserX className="h-4 w-4" /></button>
-                        ) : (
-                             <button onClick={() => handleToggleActive(staffProfile, true)} disabled={isProcessing || staffProfile.role === 'owner'} className="action-button bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900 disabled:opacity-50"><UserCheck className="h-4 w-4" /></button>
-                        )}
-                        <button onClick={() => handleDeleteStaff(staffProfile)} disabled={isProcessing || staffProfile.role === 'owner'} className="action-button bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:cursor-not-allowed"><Trash2 className="h-4 w-4" /></button>
-                      </td>
-                    </tr>
+                    staffProfiles.map((staffProfile) => (<tr key={staffProfile.id}><td className="td-style font-medium text-slate-900 dark:text-white">{staffProfile.full_name || staffProfile.id}<p className="text-xs text-slate-500 dark:text-slate-400">{staffProfile.id}</p></td><td className="td-style text-sm text-slate-500 dark:text-slate-400">{new Date(staffProfile.created_at).toLocaleDateString()}</td><td className={`td-style font-semibold capitalize ${staffProfile.role === 'manager' ? 'text-indigo-600 dark:text-indigo-400' : 'text-blue-600 dark:text-blue-400'}`}>{staffProfile.role}</td><td className="td-style">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${staffProfile.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}>{staffProfile.status.toUpperCase()}</span>
+                    </td><td className="td-style space-x-2 whitespace-nowrap">
+                      <select value={staffProfile.role} onChange={(e) => handleRoleChange(staffProfile, e.target.value as UserRole)} disabled={isProcessing || staffProfile.role === 'owner'} className="input-field py-1 text-sm w-32 inline-block disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:opacity-80">
+                        {ROLE_OPTIONS.map((role) => ( <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option> ))}
+                      </select>
+                      {staffProfile.status === 'active' ? (
+                          <button onClick={() => handleToggleActive(staffProfile, false)} disabled={isProcessing || staffProfile.role === 'owner'} className="action-button bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900 disabled:opacity-50"><UserX className="h-4 w-4" /></button>
+                      ) : (
+                           <button onClick={() => handleToggleActive(staffProfile, true)} disabled={isProcessing || staffProfile.role === 'owner'} className="action-button bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900 disabled:opacity-50"><UserCheck className="h-4 w-4" /></button>
+                      )}
+                      <button onClick={() => handleDeleteStaff(staffProfile)} disabled={isProcessing || staffProfile.role === 'owner'} className="action-button bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:cursor-not-allowed"><Trash2 className="h-4 w-4" /></button>
+                    </td></tr>
                   )))}
                 </tbody>
                 </table>

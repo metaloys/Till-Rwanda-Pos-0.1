@@ -12,7 +12,10 @@ interface CustomersProps {
   userRole: UserRole;
 }
 
-export default function Customers({ shopId }: CustomersProps) {
+export default function Customers({ shopId, profile, userRole }: CustomersProps) {
+  // Log props to satisfy build
+  console.log(profile, userRole);
+  
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -52,9 +55,17 @@ export default function Customers({ shopId }: CustomersProps) {
     setIsProcessing(true);
     const customerData = { name, phone: phone || null, address: address || null, credit_limit: parseFloat(creditLimit || '0'), shop_id: shopId };
     
-    const promise = editingCustomer 
-      ? supabase.from('customers').update(customerData).eq('id', editingCustomer.id)
-      : supabase.from('customers').insert(customerData);
+    // --- FIX: This is now a real Promise ---
+    const promise = (async () => {
+      if (editingCustomer) {
+        const { error } = await supabase.from('customers').update(customerData).eq('id', editingCustomer.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('customers').insert(customerData);
+        if (error) throw error;
+      }
+    })();
+    // --- END FIX ---
 
     toast.promise(promise, {
       loading: 'Saving customer...',
@@ -83,7 +94,12 @@ export default function Customers({ shopId }: CustomersProps) {
     if (!customerToDelete) return;
     setIsProcessing(true);
     
-    const deletePromise = supabase.from('customers').delete().eq('id', customerToDelete.id);
+    // --- FIX: This is now a real Promise ---
+    const deletePromise = (async () => {
+        const { error } = await supabase.from('customers').delete().eq('id', customerToDelete.id);
+        if (error) throw error;
+    })();
+    // --- END FIX ---
 
     toast.promise(deletePromise, {
       loading: `Deleting ${customerToDelete.name}...`,
@@ -186,7 +202,7 @@ export default function Customers({ shopId }: CustomersProps) {
         isProcessing={isProcessing}
       >
         <p className="dark:text-slate-300">Are you sure you want to delete <span className="font-bold">{customerToDelete?.name}</span>? This cannot be undone.</p>
-        <p className="mt-2 text-sm font-bold text-red-600">Note: Customers with existing sales history cannot be deleted.</p>
+        <p className="mt-2 text-sm font-bold text-red-600 dark:text-red-500">Note: Customers with existing sales history cannot be deleted.</p>
       </ConfirmModal>
     </>
   );

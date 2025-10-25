@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { X, DollarSign, Smartphone } from 'lucide-react';
+import { X } from 'lucide-react'; // FIX: Removed DollarSign, Smartphone
 import type { Customer } from '../appTypes';
+import { toast } from 'react-hot-toast';
 
 interface RecordPaymentModalProps {
   isOpen: boolean;
@@ -24,7 +25,6 @@ export default function RecordPaymentModal({
   const [method, setMethod] = useState('cash');
 
   useEffect(() => {
-    // Reset form when modal opens
     if (isOpen) {
       setAmount('');
       setMethod('cash');
@@ -38,11 +38,11 @@ export default function RecordPaymentModal({
     e.preventDefault();
     const paymentAmount = parseFloat(amount);
     if (isNaN(paymentAmount) || paymentAmount <= 0) {
-      // We'll let the main component handle toast errors
+      toast.error('Invalid amount. Please enter a positive number.');
       return; 
     }
     if (paymentAmount > customer.credit_balance) {
-      alert(`Payment amount cannot be more than the outstanding balance of ${customer.credit_balance.toLocaleString()} RWF.`);
+      toast.error(`Payment amount cannot be more than the outstanding balance of ${customer.credit_balance.toLocaleString()} RWF.`);
       return;
     }
     onConfirm(paymentAmount, method);
@@ -50,17 +50,17 @@ export default function RecordPaymentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+      <div className="relative w-full max-w-md rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl">
+        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
           <X size={20} />
         </button>
 
-        <h2 className="text-xl font-bold text-slate-900">Record Payment</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          For: <span className="font-medium text-indigo-600">{customer.name}</span>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Record Payment</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          For: <span className="font-medium text-indigo-600 dark:text-indigo-400">{customer.name}</span>
         </p>
-        <p className="mt-1 text-sm text-slate-500">
-          Current Balance: <span className="font-medium text-red-600">{customer.credit_balance.toLocaleString()} RWF</span>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Current Balance: <span className="font-medium text-red-600 dark:text-red-500">{customer.credit_balance.toLocaleString()} RWF</span>
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
