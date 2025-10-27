@@ -1,14 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole } from '../appTypes';
-import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; // FIX: Removed X
+import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
-import PaymentModal from '../components/PaymentModal';
+import PaymentModal from '../components/PaymentModal'; // This is for Cash/Bank
 import ApplyDiscountModal from '../components/ApplyDiscountModal';
 import QuantityModal from '../components/QuantityModal';
+import PaymentQRModal from '../components/PaymentQRModal'; 
 import { toast } from 'react-hot-toast';
 
 const LOW_STOCK_THRESHOLD = 5;
+
+// --- NEW ---
+// Key for saving the in-progress sale to the browser's local storage
+const IN_PROGRESS_SALE_KEY = 'till-rwanda-in-progress-sale';
+// --- END NEW ---
 
 type CartItemVariant = ProductVariant & { 
   quantity: number;
@@ -35,7 +41,10 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   const [isProcessing, setIsProcessing] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSaleDetails, setLastSaleDetails] = useState<React.ComponentProps<typeof ReceiptModal>['saleDetails']>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  const [showPaymentModal, setShowPaymentModal] = useState(false); // For Cash/Bank
+  const [showQRModal, setShowQRModal] = useState(false); 
+  
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0); 
@@ -66,6 +75,54 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   }
   
   useEffect(() => { if (shopId) { fetchVariants(); fetchCustomers(); } }, [shopId]);
+
+  // --- NEW ---
+  // EFFECT 1: Load in-progress sale from localStorage when component mounts
+  useEffect(() => {
+    try {
+      const savedSale = localStorage.getItem(IN_PROGRESS_SALE_KEY);
+      if (savedSale) {
+        const { cart: savedCart, customerId: savedCustomerId, discount: savedDiscount } = JSON.parse(savedSale);
+        
+        // Only restore if the cart has items
+        if (savedCart && Array.isArray(savedCart) && savedCart.length > 0) {
+          setCart(savedCart);
+          if (savedCustomerId) {
+            setSelectedCustomerId(savedCustomerId);
+          }
+          if (savedDiscount) {
+            setCartDiscountPercent(savedDiscount);
+          }
+          toast.success("Restored in-progress sale.");
+        } else {
+          // Found an empty or invalid saved sale, so remove it
+          localStorage.removeItem(IN_PROGRESS_SALE_KEY);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to restore sale from localStorage:", error);
+      localStorage.removeItem(IN_PROGRESS_SALE_KEY); // Clear corrupt data
+    }
+  }, []); // Empty array [] means this runs only ONCE when the component loads
+  
+  // --- NEW ---
+  // EFFECT 2: Save sale to localStorage whenever it changes
+  useEffect(() => {
+    // If the cart has items, save the current state
+    if (cart.length > 0) {
+      const saleToSave = {
+        cart: cart,
+        customerId: selectedCustomerId,
+        discount: cartDiscountPercent
+      };
+      localStorage.setItem(IN_PROGRESS_SALE_KEY, JSON.stringify(saleToSave));
+    } else {
+      // If the cart is empty (sale finished or cleared), remove the item
+      localStorage.removeItem(IN_PROGRESS_SALE_KEY);
+    }
+    // This effect will run every time these 3 values change
+  }, [cart, selectedCustomerId, cartDiscountPercent]);
+  // --- END NEW ---
 
   const addToCart = (variantToAdd: ProductVariant) => {
     const existingItem = cart.find((item) => item.id === variantToAdd.id);
@@ -108,38 +165,60 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   const handleCheckout = async (paymentMethod: PaymentMethod, transactionRef: string | null) => {
     if (cart.length === 0) return toast.error('Cart is empty!');
     setShowPaymentModal(false); 
+    setShowQRModal(false); // Close QR modal too
     setIsProcessing(true); 
 
     const payload = { shop_id: shopId, customer_id: selectedCustomerId, payment_method: paymentMethod, transaction_ref: transactionRef, discount_percent: cartDiscountPercent, items: cart.map(item => ({ variant_id: item.id, quantity: item.quantity, })), };
     const salePromise = supabase.functions.invoke('complete-sale', { body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' }, });
 
     toast.promise(salePromise, {
-       loading: 'Processing Sale...',
-       success: (response: any) => {
+        loading: 'Processing Sale...',
+        success: (response: any) => {
             if (response.data.error) throw new Error(response.data.error); 
             const customerName = selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name : null;
             setLastSaleDetails({ ...response.data.receiptDetails, customerName: customerName, });
-            setShowReceipt(true); setCart([]); setCartDiscountPercent(0); setSelectedCustomerId(null); fetchVariants();
+            setShowReceipt(true); 
+            
+            // These lines will trigger the "save" effect, which will
+            // see an empty cart and automatically clear localStorage.
+            setCart([]); 
+            setCartDiscountPercent(0); 
+            setSelectedCustomerId(null); 
+            
+            fetchVariants();
             setIsProcessing(false);
             return 'Sale Complete!';
-       },
-       error: (err) => {
+        },
+        error: (err) => {
             setIsProcessing(false);
             return `Sale failed: ${err.message}`;
-       }
+        }
     });
   };
 
-  const handleOpenPaymentModal = (method: PaymentMethod) => { if (cart.length === 0) return toast.error('Cart is empty!'); setSelectedPaymentMethod(method); setShowPaymentModal(true); };
+  const handleOpenPaymentModal = (method: PaymentMethod) => { 
+    if (cart.length === 0) return toast.error('Cart is empty!'); 
+    setSelectedPaymentMethod(method); 
+    setShowPaymentModal(true); 
+  };
+  
+  const handleOpenQRModal = (method: PaymentMethod) => {
+    if (cart.length === 0) return toast.error('Cart is empty!'); 
+    setSelectedPaymentMethod(method); 
+    setShowQRModal(true);
+  };
+  
   const handleCompleteSaleCredit = async () => { if (cart.length === 0) return toast.error('Cart is empty!'); if (!selectedCustomerId) return toast.error('Please select a customer.'); const customer = customers.find(c => c.id === selectedCustomerId); if (!customer) return toast.error("Customer not found."); if (customer.credit_limit > 0 && (customer.credit_balance + cartTotal) > customer.credit_limit) { toast.error(`Credit limit exceeded.\nLimit: ${customer.credit_limit.toLocaleString()} RWF`); return; } await handleCheckout('credit', null); };
 
   return (
     <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 h-[calc(100vh-9rem)]">
+      
       <div className="md:col-span-7 h-full overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-4 shadow-lg order-2 md:order-1">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Products & Variants</h2>
         <div className="relative mt-4"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /><input type="text" placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="input-field w-full rounded-lg" /></div>
         {loadingProducts ? ( <p className="text-center py-10 text-slate-500 dark:text-slate-400">Loading products...</p> ) : (<div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">{filteredVariants.map((variant) => { const isLowStock = variant.stock_quantity <= LOW_STOCK_THRESHOLD; return (<button key={variant.id} onClick={() => addToCart(variant)} className={` relative flex flex-col items-center justify-center rounded-lg border p-4 text-center shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isLowStock ? 'border-red-300 bg-red-50 dark:bg-red-900/50' : 'border-slate-200 bg-white dark:bg-slate-700/50 dark:border-slate-700'} hover:border-indigo-500 hover:shadow-md dark:hover:bg-slate-700 `}> {isLowStock && <AlertTriangle className="absolute top-2 right-2 h-4 w-4 text-red-500" />} {variant.image_url ? (<img src={variant.image_url} alt={variant.name || 'Product'} className="mb-2 h-16 w-16 rounded object-cover"/>) : (<div className="mb-2 h-16 w-16 rounded bg-slate-100 dark:bg-slate-600 flex items-center justify-center text-xs text-slate-500 dark:text-slate-400">No Image</div>)} <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{variant.name}</span> <span className="mt-1 text-sm text-slate-500 dark:text-slate-400">{variant.price.toLocaleString()} RWF</span> <span className={`mt-1 text-xs ${isLowStock ? 'font-bold text-red-600' : 'text-indigo-600 dark:text-indigo-400'}`}> (Stock: {variant.stock_quantity}) </span> </button>); })}</div>)}
       </div>
+      
       <div className="md:col-span-5 flex flex-col rounded-lg bg-white dark:bg-slate-800 p-4 shadow-lg order-1 md:order-2 md:h-full">
          <h2 className="flex items-center text-lg font-semibold text-slate-900 dark:text-white"><ShoppingCart className="mr-2 h-5 w-5" /> Current Sale</h2>
          <div className="mt-4"><label htmlFor="customer-select" className="label-style">Select Customer</label><div className="mt-1 flex rounded-md shadow-sm"><select id="customer-select" value={selectedCustomerId ?? ''} onChange={(e) => setSelectedCustomerId(e.target.value ? parseInt(e.target.value) : null)} className="input-field flex-1 rounded-none rounded-l-md" disabled={loadingCustomers}><option value="">-- Walk-in / Cash Sale --</option>{loadingCustomers ? (<option disabled>Loading...</option>) : (customers.map((customer) => (<option key={customer.id} value={customer.id}>{customer.name} {customer.phone ? `(${customer.phone})` : ''} - Bal: {customer.credit_balance.toLocaleString()} RWF</option>)))}</select><button type="button" className="relative -ml-px inline-flex items-center space-x-2 rounded-r-md border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600 focus:border-indigo-500 focus:ring-indigo-500"><UserPlus className="h-5 w-5 text-slate-400" /><span>New</span></button></div></div>
@@ -159,17 +238,55 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
           <div className="mb-2 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400"><span className="font-medium">Subtotal:</span><span>{subTotal.toLocaleString()} RWF</span></div>
           <div className="mb-4 flex items-center justify-between text-xl font-bold text-slate-900 dark:text-white"><span>Total Due:</span><span>{cartTotal.toLocaleString()} RWF</span></div>
           <button onClick={handleOpenDiscountModal} disabled={cart.length === 0 || isProcessing} className="mb-4 flex w-full items-center justify-center rounded-md bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm hover:bg-indigo-200 disabled:opacity-50 dark:bg-slate-700 dark:text-indigo-300 dark:hover:bg-slate-600"><Tag className="mr-2 h-4 w-4" /> Apply Discount ({cartDiscountPercent}%)</button>
+          
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3"><button onClick={() => handleOpenPaymentModal('cash')} disabled={isProcessing || cart.length === 0} className="payment-button bg-green-600 hover:bg-green-700 text-white"><DollarSign className="mr-2 h-5 w-5" /> Cash</button><button onClick={() => handleOpenPaymentModal('mtn_momo')} disabled={isProcessing || cart.length === 0} className="payment-button bg-yellow-500 hover:bg-yellow-600 text-slate-900"><Smartphone className="mr-2 h-5 w-5" /> MTN MoMo</button></div>
-            <div className="grid grid-cols-2 gap-3"><button onClick={() => handleOpenPaymentModal('airtel_money')} disabled={isProcessing || cart.length === 0} className="payment-button bg-red-600 hover:bg-red-700 text-white"><Smartphone className="mr-2 h-5 w-5" /> Airtel Money</button><button onClick={() => handleOpenPaymentModal('bank_transfer')} disabled={isProcessing || cart.length === 0} className="payment-button bg-indigo-600 hover:bg-indigo-700 text-white"><Landmark className="mr-2 h-5 w-5" /> Bank Transfer</button></div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => handleOpenPaymentModal('cash')} disabled={isProcessing || cart.length === 0} className="payment-button bg-green-600 hover:bg-green-700 text-white"><DollarSign className="mr-2 h-5 w-5" /> Cash</button>
+              <button onClick={() => handleOpenQRModal('mtn_momo')} disabled={isProcessing || cart.length === 0} className="payment-button bg-yellow-500 hover:bg-yellow-600 text-slate-900"><Smartphone className="mr-2 h-5 w-5" /> MTN MoMo</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => handleOpenQRModal('airtel_money')} disabled={isProcessing || cart.length === 0} className="payment-button bg-red-600 hover:bg-red-700 text-white"><Smartphone className="mr-2 h-5 w-5" /> Airtel Money</button>
+              <button onClick={() => handleOpenPaymentModal('bank_transfer')} disabled={isProcessing || cart.length === 0} className="payment-button bg-indigo-600 hover:bg-indigo-700 text-white"><Landmark className="mr-2 h-5 w-5" /> Bank Transfer</button>
+            </div>
             <button onClick={handleCompleteSaleCredit} disabled={isProcessing || cart.length === 0 || !selectedCustomerId} className="payment-button w-full bg-orange-600 hover:bg-orange-700 text-white disabled:bg-slate-400"><CreditCard className="mr-2 h-5 w-5" /> Pay Later (Credit)</button>
           </div>
         </div>
       </div>
+
+      {/* Modals */}
       <ReceiptModal isOpen={showReceipt} onClose={() => setShowReceipt(false)} saleDetails={lastSaleDetails} />
-      <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onConfirm={handleCheckout} total={cartTotal} paymentMethod={selectedPaymentMethod} isProcessing={isProcessing} />
-      <ApplyDiscountModal isOpen={showDiscountModal} onClose={() => setShowDiscountModal(false)} onConfirm={handleApplyDiscount} currentDiscount={cartDiscountPercent} isProcessing={isProcessing} />
-      <QuantityModal isOpen={isQuantityModalOpen} onClose={() => setIsQuantityModalOpen(false)} onConfirm={handleConfirmQuantity} variant={selectedVariantForQuantity} isProcessing={isProcessing} />
+      <PaymentModal 
+        isOpen={showPaymentModal} 
+        onClose={() => setShowPaymentModal(false)} 
+        onConfirm={handleCheckout} 
+        total={cartTotal} 
+        paymentMethod={selectedPaymentMethod} 
+        isProcessing={isProcessing} 
+      />
+      <ApplyDiscountModal 
+        isOpen={showDiscountModal} 
+        onClose={() => setShowDiscountModal(false)} 
+        onConfirm={handleApplyDiscount} 
+        currentDiscount={cartDiscountPercent} 
+        isProcessing={isProcessing} 
+      />
+      <QuantityModal 
+        isOpen={isQuantityModalOpen} 
+        onClose={() => setIsQuantityModalOpen(false)} 
+        onConfirm={handleConfirmQuantity} 
+        variant={selectedVariantForQuantity} 
+        isProcessing={isProcessing} 
+      />
+      <PaymentQRModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        onConfirm={() => {
+          handleCheckout(selectedPaymentMethod!, 'QR_CONFIRMED');
+        }}
+        totalAmount={cartTotal}
+        paymentMethod={selectedPaymentMethod}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 }

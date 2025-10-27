@@ -57,7 +57,7 @@ export default function Dashboard({ profile }: DashboardProps) {
 
     switch (currentPage) {
       case 'admin_dashboard': return <SuperAdminDashboard />;
-      case 'overview': return <Overview />; 
+      case 'overview': return <Overview profile={profile} />;
       case 'sales_history': return <SalesHistory {...pageProps} />;
       case 'expenses': return <ExpenseTracking {...pageProps} />; 
       case 'reports': return <Reports {...pageProps} />; 
