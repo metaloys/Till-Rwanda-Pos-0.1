@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import type { Profile, UserRole } from '../appTypes';
+import type { Profile, UserRole, Sale, SaleItem } from '../appTypes';
+import AnalyticsCharts from '../components/AnalyticsCharts';
 // FIX: Removed RefreshCw, which is not used in the button
 import { BarChart3, TrendingUp, TrendingDown, Star, Warehouse, Archive, DollarSign, Users, RefreshCw } from 'lucide-react'; 
 
@@ -27,6 +28,9 @@ export default function Reports({ shopId, profile, userRole }: ReportsProps) {
   const [staffSales, setStaffSales] = useState<StaffSale[]>([]);
   const [loading, setLoading] = useState(true);
   const [reportDate, setReportDate] = useState(new Date());
+  const [allSales, setAllSales] = useState<Sale[]>([]);
+  const [allSaleItems, setAllSaleItems] = useState<SaleItem[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
 
   async function fetchReportData(date: Date) { 
     setLoading(true); 
@@ -39,13 +43,16 @@ export default function Reports({ shopId, profile, userRole }: ReportsProps) {
     const endISO = endDate.toISOString();
     const dateString = date.toISOString().split('T')[0];
 
-    const [salesResult, expensesResult, topProductsResult, inventoryResult, slowProductsResult, staffSalesResult] = await Promise.all([
+    const [salesResult, expensesResult, topProductsResult, inventoryResult, slowProductsResult, staffSalesResult, allSalesResult, allSaleItemsResult, allExpensesResult] = await Promise.all([
         supabase.from('sales').select('total_amount', { count: 'exact' }).eq('shop_id', shopId).gte('created_at', startISO).lte('created_at', endISO).neq('is_returned', true),
         supabase.from('expenses').select('amount').eq('shop_id', shopId).eq('expense_date', dateString),
         supabase.rpc('get_top_selling_products', { p_shop_id: shopId }),
         supabase.rpc('get_inventory_valuation', { p_shop_id: shopId }),
         supabase.rpc('get_slow_moving_inventory', { p_shop_id: shopId, days_limit: 90 }),
-        supabase.rpc('get_sales_by_staff', { p_shop_id: shopId })
+        supabase.rpc('get_sales_by_staff', { p_shop_id: shopId }),
+        supabase.from('sales').select('*').eq('shop_id', shopId),
+        supabase.from('sale_items').select('*'),
+        supabase.from('expenses').select('*').eq('shop_id', shopId),
     ]);
 
     if (salesResult.data) { const total = salesResult.data.reduce((sum, sale) => sum + (sale.total_amount || 0), 0); setDailySalesTotal(total); setDailySaleCount(salesResult.count ?? 0); }
@@ -54,6 +61,9 @@ export default function Reports({ shopId, profile, userRole }: ReportsProps) {
     if (inventoryResult.data) { setInventoryValue(inventoryResult.data); }
     if (slowProductsResult.data) { setSlowProducts(slowProductsResult.data); }
     if (staffSalesResult.data) { setStaffSales(staffSalesResult.data); }
+    if (allSalesResult.data) { setAllSales(allSalesResult.data); }
+    if (allSaleItemsResult.data) { setAllSaleItems(allSaleItemsResult.data); }
+    if (allExpensesResult.data) { setExpenses(allExpensesResult.data); }
     
     if (salesResult.error || expensesResult.error || topProductsResult.error || inventoryResult.error || slowProductsResult.error || staffSalesResult.error) {
       console.error('Error fetching report data:', salesResult.error?.message, expensesResult.error?.message, topProductsResult.error?.message, inventoryResult.error?.message, slowProductsResult.error?.message, staffSalesResult.error?.message);
@@ -61,7 +71,9 @@ export default function Reports({ shopId, profile, userRole }: ReportsProps) {
     setLoading(false);
   }
 
-  useEffect(() => { if(shopId) fetchReportData(reportDate); }, [reportDate, shopId]);
+  useEffect(() => { 
+    if(shopId) fetchReportData(reportDate); 
+  }, [reportDate, shopId]);
   
   // FIX: handleDateChange was unused. Logic is now inline in the input's onChange.
   const profitLoss = dailySalesTotal - dailyExpensesTotal;
@@ -96,6 +108,15 @@ export default function Reports({ shopId, profile, userRole }: ReportsProps) {
           </div>
         </div>
       </div>
+
+      {/* Analytics Charts Section */}
+      {!loading && allSales.length > 0 && (
+        <div className="rounded-lg bg-white dark:bg-slate-800 p-6 shadow-lg">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Analytics & Performance</h2>
+          <AnalyticsCharts sales={allSales} saleItems={allSaleItems} expenses={expenses} />
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <div className="overflow-hidden rounded-lg bg-white dark:bg-slate-800 shadow-lg"><div className="p-5"><div className="flex items-center"><div className="flex-shrink-0 rounded-md bg-green-500 p-3"><TrendingUp className="h-6 w-6 text-white" /></div><div className="ml-5 w-0 flex-1"><dl><dt className="truncate text-sm font-medium text-slate-500 dark:text-slate-400">Total Sales</dt><dd>{loading ? ( <div className="mt-1 h-8 w-24 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div> ) : (<div className="text-2xl font-bold text-slate-900 dark:text-white">{dailySalesTotal.toLocaleString()} RWF</div>)}</dd></dl></div></div></div><div className="bg-slate-50 dark:bg-slate-700/50 px-5 py-3"><div className="text-sm">{loading ? (<div className="h-4 w-12 animate-pulse rounded bg-slate-200 dark:bg-slate-600"></div>) : (<span className="font-medium text-slate-700 dark:text-slate-300">{dailySaleCount}</span>)}<span className="text-slate-500 dark:text-slate-400"> transactions</span></div></div></div>
         <div className="overflow-hidden rounded-lg bg-white dark:bg-slate-800 shadow-lg"><div className="p-5"><div className="flex items-center"><div className="flex-shrink-0 rounded-md bg-red-500 p-3"><TrendingDown className="h-6 w-6 text-white" /></div><div className="ml-5 w-0 flex-1"><dl><dt className="truncate text-sm font-medium text-slate-500 dark:text-slate-400">Total Expenses</dt><dd>{loading ? ( <div className="mt-1 h-8 w-24 animate-pulse rounded bg-slate-200 dark:bg-slate-700"></div> ) : (<div className="text-2xl font-bold text-slate-900 dark:text-white">{dailyExpensesTotal.toLocaleString()} RWF</div>)}</dd></dl></div></div></div></div>
