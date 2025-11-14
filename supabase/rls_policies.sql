@@ -18,7 +18,55 @@
 --
 -- ============================================================================
 
--- Enable RLS on all tables
+-- ============================================================================
+-- STEP 1: DROP ALL EXISTING POLICIES (in case they already exist)
+-- ============================================================================
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Super admins can view all profiles" ON public.profiles;
+
+DROP POLICY IF EXISTS "Users can view their shops" ON public.shops;
+DROP POLICY IF EXISTS "Users can update their shops" ON public.shops;
+DROP POLICY IF EXISTS "Super admins can view all shops" ON public.shops;
+
+DROP POLICY IF EXISTS "Users can view products from their shop" ON public.products;
+DROP POLICY IF EXISTS "Users can insert products to their shop" ON public.products;
+DROP POLICY IF EXISTS "Users can update products from their shop" ON public.products;
+DROP POLICY IF EXISTS "Users can delete products from their shop" ON public.products;
+DROP POLICY IF EXISTS "Super admins can view all products" ON public.products;
+
+DROP POLICY IF EXISTS "Users can view product variants from their shop" ON public.product_variants;
+DROP POLICY IF EXISTS "Users can insert variants for their shop's products" ON public.product_variants;
+DROP POLICY IF EXISTS "Users can update variants for their shop's products" ON public.product_variants;
+DROP POLICY IF EXISTS "Super admins can view all variants" ON public.product_variants;
+
+DROP POLICY IF EXISTS "Users can view sales from their shop" ON public.sales;
+DROP POLICY IF EXISTS "Users can insert sales to their shop" ON public.sales;
+DROP POLICY IF EXISTS "Users can update sales from their shop" ON public.sales;
+DROP POLICY IF EXISTS "Super admins can view all sales" ON public.sales;
+
+DROP POLICY IF EXISTS "Users can view sale items from their shop" ON public.sale_items;
+DROP POLICY IF EXISTS "Users can insert sale items for their shop" ON public.sale_items;
+DROP POLICY IF EXISTS "Super admins can view all sale items" ON public.sale_items;
+
+DROP POLICY IF EXISTS "Users can view customers from their shop" ON public.customers;
+DROP POLICY IF EXISTS "Users can insert customers to their shop" ON public.customers;
+DROP POLICY IF EXISTS "Users can update customers from their shop" ON public.customers;
+DROP POLICY IF EXISTS "Super admins can view all customers" ON public.customers;
+
+DROP POLICY IF EXISTS "Users can view credit payments from their shop" ON public.credit_payments;
+DROP POLICY IF EXISTS "Users can insert credit payments for their shop" ON public.credit_payments;
+DROP POLICY IF EXISTS "Super admins can view all credit payments" ON public.credit_payments;
+
+DROP POLICY IF EXISTS "Users can view expenses from their shop" ON public.expenses;
+DROP POLICY IF EXISTS "Users can insert expenses to their shop" ON public.expenses;
+DROP POLICY IF EXISTS "Users can update expenses from their shop" ON public.expenses;
+DROP POLICY IF EXISTS "Users can delete expenses from their shop" ON public.expenses;
+DROP POLICY IF EXISTS "Super admins can view all expenses" ON public.expenses;
+
+-- ============================================================================
+-- STEP 2: ENABLE RLS ON ALL TABLES
+-- ============================================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shops ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
