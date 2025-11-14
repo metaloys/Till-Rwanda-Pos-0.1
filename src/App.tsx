@@ -82,7 +82,7 @@ function App() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      console.log('[PWA] Install prompt ready');
+      console.log('[PWA] Install prompt ready', (e as BeforeInstallPromptEvent).prompt);
     };
 
     const handleAppInstalled = () => {

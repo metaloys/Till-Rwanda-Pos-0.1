@@ -20,7 +20,7 @@ export class ProductCacheService {
 
       // Get product info for each variant
       const productsMap = new Map<
-        number,
+        string,
         {
           id: string;
           name: string;
@@ -52,7 +52,7 @@ export class ProductCacheService {
 
       // Cache each variant
       const cachedProducts: CachedProduct[] = variants.map((v) => {
-        const product = productsMap.get(v.product_id);
+        const product = productsMap.get(String(v.product_id));
         return {
           id: v.id.toString(),
           shopId,
