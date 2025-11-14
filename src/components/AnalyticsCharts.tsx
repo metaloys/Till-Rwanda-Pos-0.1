@@ -200,7 +200,8 @@ export default function AnalyticsCharts({ sales, saleItems, expenses = [] }: Ana
                     const name = String(props.name || '');
                     const value = Number(props.value || 0);
                     return `${name}: ${value.toLocaleString()} RWF`;
-                  }) as any}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  }) as unknown as any}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
