@@ -38,13 +38,6 @@ CREATE POLICY "Users can view own profile"
 ON public.profiles FOR SELECT
 USING (auth.uid() = id);
 
--- Super admins can view all profiles
-CREATE POLICY "Super admins can view all profiles"
-ON public.profiles FOR SELECT
-USING (
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
-);
-
 -- Users can only update their own profile
 CREATE POLICY "Users can update own profile"
 ON public.profiles FOR UPDATE
@@ -53,15 +46,13 @@ USING (auth.uid() = id);
 -- ============================================================================
 -- SHOPS TABLE POLICIES
 -- ============================================================================
--- Users can view shops they own or are staff in
+-- Users can view shops they own
 CREATE POLICY "Users can view their shops"
 ON public.shops FOR SELECT
 USING (
   id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
-  OR
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
 );
 
 -- Only shop owners can update their shop
@@ -83,8 +74,6 @@ USING (
   shop_id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
-  OR
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
 );
 
 -- Users can only insert products to their shop
@@ -127,8 +116,6 @@ USING (
       SELECT shop_id FROM public.profiles WHERE id = auth.uid()
     )
   )
-  OR
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
 );
 
 -- Users can only insert variants for their shop's products
@@ -165,8 +152,6 @@ USING (
   shop_id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
-  OR
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
 );
 
 -- Users can only insert sales to their shop
@@ -200,8 +185,6 @@ USING (
       SELECT shop_id FROM public.profiles WHERE id = auth.uid()
     )
   )
-  OR
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
 );
 
 -- Users can only insert sale items for sales in their shop
@@ -226,8 +209,6 @@ USING (
   shop_id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
-  OR
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
 );
 
 -- Users can only insert customers to their shop
@@ -261,8 +242,6 @@ USING (
       SELECT shop_id FROM public.profiles WHERE id = auth.uid()
     )
   )
-  OR
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
 );
 
 -- Users can only insert credit payments for their shop's customers
@@ -287,8 +266,6 @@ USING (
   shop_id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
-  OR
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
 );
 
 -- Users can only insert expenses to their shop
