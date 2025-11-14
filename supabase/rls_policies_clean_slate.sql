@@ -15,20 +15,44 @@
 -- ============================================================================
 
 -- ============================================================================
--- STEP 1: DISABLE RLS ON ALL TABLES (wipe all old policies)
+-- STEP 1: DROP ALL EXISTING POLICIES (guaranteed removal)
 -- ============================================================================
-ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.shops DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.products DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.product_variants DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sales DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sale_items DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.customers DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.credit_payments DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expenses DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles CASCADE;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles CASCADE;
+
+DROP POLICY IF EXISTS "Users can view their shops" ON public.shops CASCADE;
+DROP POLICY IF EXISTS "Users can update their shops" ON public.shops CASCADE;
+
+DROP POLICY IF EXISTS "Users can view products from their shop" ON public.products CASCADE;
+DROP POLICY IF EXISTS "Users can insert products to their shop" ON public.products CASCADE;
+DROP POLICY IF EXISTS "Users can update products from their shop" ON public.products CASCADE;
+DROP POLICY IF EXISTS "Users can delete products from their shop" ON public.products CASCADE;
+
+DROP POLICY IF EXISTS "Users can view product variants from their shop" ON public.product_variants CASCADE;
+DROP POLICY IF EXISTS "Users can insert variants for their shop's products" ON public.product_variants CASCADE;
+DROP POLICY IF EXISTS "Users can update variants for their shop's products" ON public.product_variants CASCADE;
+
+DROP POLICY IF EXISTS "Users can view sales from their shop" ON public.sales CASCADE;
+DROP POLICY IF EXISTS "Users can insert sales to their shop" ON public.sales CASCADE;
+DROP POLICY IF EXISTS "Users can update sales from their shop" ON public.sales CASCADE;
+
+DROP POLICY IF EXISTS "Users can view sale items from their shop" ON public.sale_items CASCADE;
+DROP POLICY IF EXISTS "Users can insert sale items for their shop" ON public.sale_items CASCADE;
+
+DROP POLICY IF EXISTS "Users can view customers from their shop" ON public.customers CASCADE;
+DROP POLICY IF EXISTS "Users can insert customers to their shop" ON public.customers CASCADE;
+DROP POLICY IF EXISTS "Users can update customers from their shop" ON public.customers CASCADE;
+
+DROP POLICY IF EXISTS "Users can view credit payments from their shop" ON public.credit_payments CASCADE;
+DROP POLICY IF EXISTS "Users can insert credit payments for their shop" ON public.credit_payments CASCADE;
+
+DROP POLICY IF EXISTS "Users can view expenses from their shop" ON public.expenses CASCADE;
+DROP POLICY IF EXISTS "Users can insert expenses to their shop" ON public.expenses CASCADE;
+DROP POLICY IF EXISTS "Users can update expenses from their shop" ON public.expenses CASCADE;
+DROP POLICY IF EXISTS "Users can delete expenses from their shop" ON public.expenses CASCADE;
 
 -- ============================================================================
--- STEP 2: ENABLE RLS ON ALL TABLES (fresh start)
+-- STEP 2: ENABLE RLS ON ALL TABLES (ensure enabled)
 -- ============================================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shops ENABLE ROW LEVEL SECURITY;
