@@ -28,7 +28,7 @@ ALTER TABLE public.sale_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.credit_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.staff ENABLE ROW LEVEL SECURITY;
+-- Note: staff table policies removed - table doesn't exist in current schema
 
 -- ============================================================================
 -- PROFILES TABLE POLICIES
@@ -315,47 +315,6 @@ ON public.expenses FOR DELETE
 USING (
   shop_id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
-  )
-);
-
--- ============================================================================
--- STAFF TABLE POLICIES
--- ============================================================================
--- Users can only view staff from their shop
-CREATE POLICY "Users can view staff from their shop"
-ON public.staff FOR SELECT
-USING (
-  shop_id IN (
-    SELECT shop_id FROM public.profiles WHERE id = auth.uid()
-  )
-  OR
-  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
-);
-
--- Only owners can insert staff to their shop
-CREATE POLICY "Owners can insert staff to their shop"
-ON public.staff FOR INSERT
-WITH CHECK (
-  shop_id IN (
-    SELECT shop_id FROM public.profiles WHERE id = auth.uid() AND role = 'owner'
-  )
-);
-
--- Only owners can update staff in their shop
-CREATE POLICY "Owners can update staff in their shop"
-ON public.staff FOR UPDATE
-USING (
-  shop_id IN (
-    SELECT shop_id FROM public.profiles WHERE id = auth.uid() AND role = 'owner'
-  )
-);
-
--- Only owners can delete staff from their shop
-CREATE POLICY "Owners can delete staff from their shop"
-ON public.staff FOR DELETE
-USING (
-  shop_id IN (
-    SELECT shop_id FROM public.profiles WHERE id = auth.uid() AND role = 'owner'
   )
 );
 
