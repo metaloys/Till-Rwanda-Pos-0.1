@@ -41,7 +41,12 @@ export default function Reports({ shopId, profile, userRole }: ReportsProps) {
     const endDate = new Date(date); endDate.setHours(23, 59, 59, 999);
     const startISO = startDate.toISOString();
     const endISO = endDate.toISOString();
-    const dateString = date.toISOString().split('T')[0];
+    
+    // Use local date string for expense_date comparison (not UTC)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
 
     const [salesResult, expensesResult, topProductsResult, inventoryResult, slowProductsResult, staffSalesResult, allSalesResult, allSaleItemsResult, allExpensesResult] = await Promise.all([
         supabase.from('sales').select('total_amount', { count: 'exact' }).eq('shop_id', shopId).gte('created_at', startISO).lte('created_at', endISO).neq('is_returned', true),

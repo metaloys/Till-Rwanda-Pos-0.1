@@ -27,12 +27,20 @@ export default function Overview({ shopId }: OverviewProps) {
         const startDate = new Date(today); startDate.setHours(0, 0, 0, 0); 
         const endDate = new Date(today); endDate.setHours(23, 59, 59, 999);
         const startISO = startDate.toISOString(); const endISO = endDate.toISOString();
-        const dateString = today.toISOString().split('T')[0];
+        
+        // Use local date string for expense_date comparison (not UTC)
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+        
+        console.log('📊 Fetching metrics for:', dateString, 'Sales ISO:', startISO, 'to', endISO);
 
         const { data: salesData, error: salesError, count: salesCount } = await supabase.from('sales').select('total_amount', { count: 'exact' }).eq('shop_id', shopId).gte('created_at', startISO).lte('created_at', endISO).neq('is_returned', true);
         const salesTotal = salesData ? salesData.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) : 0;
         
         const { data: expensesData, error: expensesError } = await supabase.from('expenses').select('amount').eq('shop_id', shopId).eq('expense_date', dateString);
+        console.log('💰 Expenses for', dateString, ':', expensesData);
         const expenseTotal = expensesData ? expensesData.reduce((sum, expense) => sum + (expense.amount || 0), 0) : 0;
         
         // Get low stock items - properly filtered by shop_id through products table
