@@ -8,6 +8,12 @@ import ResetPassword from './pages/ResetPassword';
 import { Toaster } from 'react-hot-toast';
 import { initializeOfflineDB } from './lib/db';
 
+// PWA Install Event Type
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -15,7 +21,7 @@ function App() {
   const [isPasswordReset, setIsPasswordReset] = useState(
     window.location.hash.includes('type=recovery')
   );
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   const fetchProfile = async (userId: string) => {
     setIsLoadingProfile(true);
@@ -75,7 +81,7 @@ function App() {
     // Handle PWA install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       console.log('[PWA] Install prompt ready');
     };
 

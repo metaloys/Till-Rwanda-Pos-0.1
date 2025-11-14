@@ -7,7 +7,6 @@ import type { ProductVariant } from '../appTypes';
  */
 export class ProductCacheService {
   private static CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in ms
-  private static isSyncing = false;
 
   /**
    * Cache products for offline access
@@ -42,11 +41,11 @@ export class ProductCacheService {
       }
 
       if (products) {
-        products.forEach((p: any) => {
-          productsMap.set(p.id, {
-            id: p.id.toString(),
-            name: p.name,
-            category: p.category || 'Uncategorized',
+        products.forEach((p: Record<string, unknown>) => {
+          productsMap.set(String(p.id), {
+            id: String(p.id),
+            name: String(p.name || ''),
+            category: String(p.category || 'Uncategorized'),
           });
         });
       }
@@ -136,7 +135,7 @@ export class ProductCacheService {
         cachedAt: oldest?.cachedAt || null,
         isStale: count === 0 || (await this.isCacheStale(shopId)),
       };
-    } catch (error) {
+    } catch {
       return { cachedCount: 0, cachedAt: null, isStale: true };
     }
   }
