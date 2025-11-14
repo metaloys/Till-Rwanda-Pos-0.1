@@ -25,7 +25,7 @@ const CACHE_LIMITS = {
 /**
  * Install event - cache static assets
  */
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -37,11 +37,10 @@ self.addEventListener('install', (event: ExtendableEvent) => {
   );
   self.skipWaiting();
 });
-
 /**
  * Activate event - clean up old caches
  */
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Activating...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -61,7 +60,7 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
 /**
  * Fetch event - implement caching strategy
  */
-self.addEventListener('fetch', (event: FetchEvent) => {
+self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
@@ -86,7 +85,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 /**
  * Cache first strategy - try cache, fallback to network
  */
-async function cacheFirstStrategy(request: Request, cacheName: string): Promise<Response> {
+async function cacheFirstStrategy(request, cacheName) {
   try {
     const cached = await caches.match(request);
     if (cached) {
@@ -119,7 +118,7 @@ async function cacheFirstStrategy(request: Request, cacheName: string): Promise<
 /**
  * Network first strategy - try network, fallback to cache
  */
-async function networkFirstStrategy(request: Request, cacheName: string): Promise<Response> {
+async function networkFirstStrategy(request, cacheName) {
   try {
     const response = await fetch(request);
 
@@ -149,7 +148,7 @@ async function networkFirstStrategy(request: Request, cacheName: string): Promis
 /**
  * Trim cache to size limit
  */
-async function trimCache(cacheName: string, limit: number): Promise<void> {
+async function trimCache(cacheName, limit) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
 
@@ -164,7 +163,7 @@ async function trimCache(cacheName: string, limit: number): Promise<void> {
 /**
  * Background sync for offline sales
  */
-self.addEventListener('sync', (event: any) => {
+self.addEventListener('sync', (event) => {
   console.log('[Service Worker] Background sync event:', event.tag);
 
   if (event.tag === 'sync-offline-sales') {
@@ -175,7 +174,7 @@ self.addEventListener('sync', (event: any) => {
 /**
  * Sync offline sales data with server
  */
-async function syncOfflineSales(): Promise<void> {
+async function syncOfflineSales() {
   try {
     console.log('[Service Worker] Syncing offline sales...');
     // This will be handled by the app's offline service
@@ -195,7 +194,7 @@ async function syncOfflineSales(): Promise<void> {
 /**
  * Handle push notifications
  */
-self.addEventListener('push', (event: any) => {
+self.addEventListener('push', (event) => {
   console.log('[Service Worker] Push notification received');
 
   const data = event.data?.json() || {};
@@ -213,7 +212,7 @@ self.addEventListener('push', (event: any) => {
 /**
  * Handle notification clicks
  */
-self.addEventListener('notificationclick', (event: any) => {
+self.addEventListener('notificationclick', (event) => {
   console.log('[Service Worker] Notification clicked');
   event.notification.close();
 
@@ -223,7 +222,7 @@ self.addEventListener('notificationclick', (event: any) => {
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
         if (client.url === '/' && 'focus' in client) {
-          return (client as any).focus();
+          return client.focus();
         }
       }
       // Open new window if not found
