@@ -21,7 +21,8 @@ function App() {
   const [isPasswordReset, setIsPasswordReset] = useState(
     window.location.hash.includes('type=recovery')
   );
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   const fetchProfile = async (userId: string) => {
     setIsLoadingProfile(true);
