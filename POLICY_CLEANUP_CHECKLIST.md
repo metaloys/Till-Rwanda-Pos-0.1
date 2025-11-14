@@ -105,32 +105,48 @@ Based on what you showed me, there are MANY conflicting policies. You must delet
 
 ---
 
-## HOW TO DELETE
+## HOW TO DELETE - SQL METHOD (EASY - Takes 30 seconds!)
 
-For each table:
-1. Click table name in Supabase Policies UI
-2. For each policy in that table:
-   - Click the ⋮ (three dots) menu
-   - Select **Delete**
-   - Confirm
+**DO THIS INSTEAD OF MANUAL DELETION:**
+
+1. Open file: `supabase/rls_cleanup_all.sql` in your project
+2. Go to **Supabase SQL Editor** → Copy entire file content
+3. **Paste it** into the SQL Editor
+4. Click **"Run"** button
+5. **Wait** - all policies deleted automatically ✅
 
 ---
 
-## AFTER DELETING ALL
+## AFTER RUNNING SQL CLEANUP
 
-1. Click **"Disable RLS"** on each table
-2. Run verification:
+**Verify it worked:**
+
+Copy and paste this into SQL Editor:
+
 ```sql
-SELECT tablename, rowsecurity FROM pg_tables 
-WHERE schemaname = 'public' ORDER BY tablename;
+SELECT COUNT(*) as total_policies FROM pg_policies WHERE schemaname = 'public';
 ```
-Should show ALL as `false`
 
-3. Hard refresh browser (Ctrl+F5)
-4. Report back!
+**Result should be: `0`**
+
+If you see `0`, great! All policies deleted.
+
+Then run:
+
+```sql
+SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;
+```
+
+**Result should show all `false`** (RLS disabled)
 
 ---
 
-This will take ~10 minutes but it's NECESSARY to clear all the mess from previous attempts.
+## ✅ YOU'RE DONE!
 
-**DO THIS NOW and report when done!** ✅
+Once you confirm:
+- Total policies = 0
+- All RLS = false
+
+Report back and we'll rebuild fresh policies!
+
+**DO THIS NOW!** 30 seconds and we're unblocked 🚀
