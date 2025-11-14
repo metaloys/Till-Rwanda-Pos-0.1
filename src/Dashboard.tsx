@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 import type { Profile, UserRole } from './appTypes.ts'; 
 import { Menu, X, Building, ShoppingCart, LayoutDashboard, ListOrdered, ReceiptText, BarChart3, History, Package, UserPlus, CreditCard, Users } from 'lucide-react'; 
 import ThemeToggle from './components/ThemeToggle';
+import OfflineIndicator from './components/OfflineIndicator';
 
 // Import our pages
 import Overview from './pages/Overview';
@@ -162,6 +163,9 @@ export default function Dashboard({ profile }: DashboardProps) {
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Offline Indicator */}
+      {shopId && <OfflineIndicator shopId={shopId} />}
+
       <div className={`fixed inset-0 z-40 flex md:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
         <div className="relative flex w-64 max-w-[80vw] flex-col border-r border-slate-200 bg-white p-4 dark:bg-slate-800 dark:border-slate-700">
             <button

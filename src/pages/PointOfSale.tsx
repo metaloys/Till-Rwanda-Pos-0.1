@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole } from '../appTypes';
+import type { ProductVariant, Customer, PaymentMethod, Profile, UserRole, CartItem } from '../appTypes';
 import { ShoppingCart, Trash2, UserPlus, CreditCard, AlertTriangle, DollarSign, Smartphone, Landmark, Tag, Search } from 'lucide-react'; // FIX: Removed X
 import ReceiptModal from '../components/ReceiptModal';
 import PaymentModal from '../components/PaymentModal';
 import ApplyDiscountModal from '../components/ApplyDiscountModal';
 import QuantityModal from '../components/QuantityModal';
 import { toast } from 'react-hot-toast';
+import { ConnectivityService } from '../lib/connectivityService';
+import { OfflineSalesService } from '../lib/offlineSalesService';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -43,6 +45,7 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
   const [selectedVariantForQuantity, setSelectedVariantForQuantity] = useState<ProductVariant | null>(null);
   const [showCartOnMobile, setShowCartOnMobile] = useState(false);
+  const [isOnline, setIsOnline] = useState(ConnectivityService.getOnlineStatus());
 
   async function fetchVariants() {
     setLoadingProducts(true);
@@ -66,7 +69,24 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
     setLoadingCustomers(false);
   }
   
-  useEffect(() => { if (shopId) { fetchVariants(); fetchCustomers(); } }, [shopId]);
+  useEffect(() => { 
+    if (shopId) { 
+      void fetchVariants(); 
+      void fetchCustomers(); 
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shopId]);
+
+  // Monitor connectivity
+  useEffect(() => {
+    const unsubscribe = ConnectivityService.subscribe((online) => {
+      setIsOnline(online);
+      if (online) {
+        toast.success('Back online! Syncing your sales...', { icon: '📡' });
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   const addToCart = (variantToAdd: ProductVariant) => {
     const existingItem = cart.find((item) => item.id === variantToAdd.id);
@@ -111,24 +131,77 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
     setShowPaymentModal(false); 
     setIsProcessing(true); 
 
-    const payload = { shop_id: shopId, customer_id: selectedCustomerId, payment_method: paymentMethod, transaction_ref: transactionRef, discount_percent: cartDiscountPercent, items: cart.map(item => ({ variant_id: item.id, quantity: item.quantity, })), };
-    const salePromise = supabase.functions.invoke('complete-sale', { body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' }, });
+    // Calculate totals
+    const cartSubtotal = cart.reduce((sum, item) => sum + (item.final_price * item.quantity), 0);
+    const discountAmount = cartSubtotal * (cartDiscountPercent / 100);
+    const finalAmount = cartSubtotal - discountAmount;
 
-    toast.promise(salePromise, {
-       loading: 'Processing Sale...',
-       success: (response: any) => {
-            if (response.data.error) throw new Error(response.data.error); 
-            const customerName = selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name : null;
-            setLastSaleDetails({ ...response.data.receiptDetails, customerName: customerName, });
-            setShowReceipt(true); setCart([]); setCartDiscountPercent(0); setSelectedCustomerId(null); fetchVariants();
-            setIsProcessing(false);
-            return 'Sale Complete!';
-       },
-       error: (err) => {
-            setIsProcessing(false);
-            return `Sale failed: ${err.message}`;
-       }
-    });
+    // If online, try to complete sale immediately
+    if (isOnline) {
+      const payload = { shop_id: shopId, customer_id: selectedCustomerId, payment_method: paymentMethod, transaction_ref: transactionRef, discount_percent: cartDiscountPercent, items: cart.map(item => ({ variant_id: item.id, quantity: item.quantity, })), };
+      const salePromise = supabase.functions.invoke('complete-sale', { body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' }, });
+
+      toast.promise(salePromise, {
+         loading: 'Processing Sale...',
+         success: (response) => {
+              if (response.data?.error) throw new Error(response.data.error);
+              const receiptDetails = response.data?.receiptDetails;
+              if (!receiptDetails) throw new Error('No receipt details returned');
+              const customerName = selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name : null;
+              setLastSaleDetails({ ...receiptDetails, customerName });
+              setShowReceipt(true); setCart([]); setCartDiscountPercent(0); setSelectedCustomerId(null); void fetchVariants();
+              setIsProcessing(false);
+              return 'Sale Complete!';
+         },
+         error: (err) => {
+              setIsProcessing(false);
+              return `Sale failed: ${err instanceof Error ? err.message : 'Unknown error'}`;
+         }
+      });
+    } else {
+      // Offline: Save to IndexedDB
+      try {
+        await OfflineSalesService.saveOfflineSale(shopId, {
+          customerId: selectedCustomerId?.toString() || undefined,
+          items: cart.map(item => ({
+            productId: item.product_id.toString(),
+            variantId: item.id.toString(),
+            quantity: item.quantity,
+            price: item.price,
+            discount: cartDiscountPercent,
+          })),
+          paymentMethod,
+          paymentReference: transactionRef || undefined,
+          totalAmount: cartSubtotal,
+          discountAmount,
+          finalAmount,
+        });
+
+        const customerName = selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name : null;
+        setLastSaleDetails({
+          items: cart as CartItem[],
+          customerName,
+          saleId: undefined,
+          subtotal: cartSubtotal,
+          discountAmount,
+          discountPercent: cartDiscountPercent,
+          total: finalAmount,
+          paymentMethod: paymentMethod === 'mtn_momo' ? 'MTN' : paymentMethod === 'airtel_money' ? 'Airtel' : paymentMethod,
+        });
+        setShowReceipt(true);
+        setCart([]);
+        setCartDiscountPercent(0);
+        setSelectedCustomerId(null);
+        setIsProcessing(false);
+        
+        toast.success('Sale saved offline. Will sync when you\'re back online.', {
+          icon: '📱',
+        });
+      } catch (error) {
+        setIsProcessing(false);
+        toast.error(`Failed to save offline: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
   };
 
   const handleOpenPaymentModal = (method: PaymentMethod) => { if (cart.length === 0) return toast.error('Cart is empty!'); setSelectedPaymentMethod(method); setShowPaymentModal(true); };

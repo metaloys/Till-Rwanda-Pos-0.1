@@ -6,6 +6,7 @@ import Auth from './Auth';
 import Dashboard from './Dashboard';
 import ResetPassword from './pages/ResetPassword';
 import { Toaster } from 'react-hot-toast';
+import { initializeOfflineDB } from './lib/db';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -36,11 +37,11 @@ function App() {
     }
 
     // 2. Now, create the full profile object
-    let fullProfile: Profile = profileData as Profile;
+    const fullProfile: Profile = profileData as Profile;
     
     if (profileData.is_super_admin) {
       // Super admins are always active
-      fullProfile.is_active = true;
+      (fullProfile as Partial<Profile>).is_active = true;
     } else if (profileData.shop_id) {
       // This is a regular shop owner, so we MUST check their shop's status
       const { data: shopData, error: shopError } = await supabase
@@ -51,14 +52,14 @@ function App() {
         
       if (shopError) {
         console.error('Error fetching shop status:', shopError.message);
-        fullProfile.is_active = false; // Default to inactive if shop query fails
+        (fullProfile as Partial<Profile>).is_active = false; // Default to inactive if shop query fails
       } else if (shopData) {
-        fullProfile.is_active = shopData.is_active;
-        fullProfile.trial_ends_at = shopData.trial_ends_at;
+        (fullProfile as Partial<Profile>).is_active = shopData.is_active;
+        (fullProfile as Partial<Profile>).trial_ends_at = shopData.trial_ends_at;
       }
     } else {
       // User has no shop_id and is not admin, they are locked out.
-      fullProfile.is_active = false;
+      (fullProfile as Partial<Profile>).is_active = false;
     }
 
     setProfile(fullProfile);
@@ -67,6 +68,9 @@ function App() {
   // --- END FIX ---
 
   useEffect(() => {
+    // Initialize offline database on app startup
+    void initializeOfflineDB();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === 'PASSWORD_RECOVERY') {
         setIsPasswordReset(false); setSession(null); setProfile(null);
