@@ -15,23 +15,37 @@
 -- ============================================================================
 
 -- ============================================================================
--- STEP 1: DISABLE RLS ON ALL TABLES (completely removes ALL policies)
+-- STEP 1: FORCE DROP ALL POLICIES (use CASCADE to force removal)
 -- ============================================================================
-ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.shops DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.products DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.product_variants DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sales DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sale_items DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.customers DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.credit_payments DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expenses DISABLE ROW LEVEL SECURITY;
-
--- Small pause to ensure tables are properly disabled
--- (This comment is just for clarity, the disable above is atomic)
+-- This MUST be done even after DISABLE because policies can persist
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles CASCADE;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles CASCADE;
+DROP POLICY IF EXISTS "Users can view their shops" ON public.shops CASCADE;
+DROP POLICY IF EXISTS "Users can update their shops" ON public.shops CASCADE;
+DROP POLICY IF EXISTS "Users can view products from their shop" ON public.products CASCADE;
+DROP POLICY IF EXISTS "Users can insert products to their shop" ON public.products CASCADE;
+DROP POLICY IF EXISTS "Users can update products from their shop" ON public.products CASCADE;
+DROP POLICY IF EXISTS "Users can delete products from their shop" ON public.products CASCADE;
+DROP POLICY IF EXISTS "Users can view product variants from their shop" ON public.product_variants CASCADE;
+DROP POLICY IF EXISTS "Users can insert variants for their shop's products" ON public.product_variants CASCADE;
+DROP POLICY IF EXISTS "Users can update variants for their shop's products" ON public.product_variants CASCADE;
+DROP POLICY IF EXISTS "Users can view sales from their shop" ON public.sales CASCADE;
+DROP POLICY IF EXISTS "Users can insert sales to their shop" ON public.sales CASCADE;
+DROP POLICY IF EXISTS "Users can update sales from their shop" ON public.sales CASCADE;
+DROP POLICY IF EXISTS "Users can view sale items from their shop" ON public.sale_items CASCADE;
+DROP POLICY IF EXISTS "Users can insert sale items for their shop" ON public.sale_items CASCADE;
+DROP POLICY IF EXISTS "Users can view customers from their shop" ON public.customers CASCADE;
+DROP POLICY IF EXISTS "Users can insert customers to their shop" ON public.customers CASCADE;
+DROP POLICY IF EXISTS "Users can update customers from their shop" ON public.customers CASCADE;
+DROP POLICY IF EXISTS "Users can view credit payments from their shop" ON public.credit_payments CASCADE;
+DROP POLICY IF EXISTS "Users can insert credit payments for their shop" ON public.credit_payments CASCADE;
+DROP POLICY IF EXISTS "Users can view expenses from their shop" ON public.expenses CASCADE;
+DROP POLICY IF EXISTS "Users can insert expenses to their shop" ON public.expenses CASCADE;
+DROP POLICY IF EXISTS "Users can update expenses from their shop" ON public.expenses CASCADE;
+DROP POLICY IF EXISTS "Users can delete expenses from their shop" ON public.expenses CASCADE;
 
 -- ============================================================================
--- STEP 2: ENABLE RLS ON ALL TABLES (fresh start with no policies)
+-- STEP 2: ENABLE RLS ON ALL TABLES (ensure enabled for new policies)
 -- ============================================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shops ENABLE ROW LEVEL SECURITY;
@@ -44,7 +58,7 @@ ALTER TABLE public.credit_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- STEP 3: CREATE NEW CLEAN POLICIES (no recursion)
+-- STEP 3: CREATE NEW CLEAN POLICIES (no recursion, fresh start)
 -- ============================================================================
 
 -- PROFILES
