@@ -15,6 +15,7 @@ function App() {
   const [isPasswordReset, setIsPasswordReset] = useState(
     window.location.hash.includes('type=recovery')
   );
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const fetchProfile = async (userId: string) => {
     setIsLoadingProfile(true);
@@ -71,6 +72,21 @@ function App() {
     // Initialize offline database on app startup
     void initializeOfflineDB();
 
+    // Handle PWA install prompt
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log('[PWA] Install prompt ready');
+    };
+
+    const handleAppInstalled = () => {
+      console.log('[PWA] App installed successfully');
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === 'PASSWORD_RECOVERY') {
         setIsPasswordReset(false); setSession(null); setProfile(null);
@@ -95,7 +111,11 @@ function App() {
         setIsLoadingProfile(false);
     }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, [isPasswordReset]);
 
   // --- RENDER LOGIC ---
