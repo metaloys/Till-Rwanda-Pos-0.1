@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient';
 import type { Product, UserRole, Profile } from '../appTypes';
 import { Edit, Package, Tag } from 'lucide-react';
 import ProductVariantModal from '../components/ProductVariantModal';
+import CacheStats from '../components/CacheStats';
 import { toast } from 'react-hot-toast';
 
 interface ProductsProps {
@@ -84,6 +85,12 @@ export default function Products({ shopId, userRole, profile }: ProductsProps) {
       <div className="lg:col-span-1">
         <div className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-card hover:shadow-card-hover transition-all">
           <h2 className="card-header">{editingProduct ? `Edit ${editingProduct.name}` : 'Add New Product'}</h2>
+          
+          {/* Cache Stats */}
+          <div className="mb-6 mt-4">
+            <CacheStats shopId={shopId} />
+          </div>
+
           <form onSubmit={handleFormSubmit} className="mt-4 space-y-4 animate-fade-in">
             <div><label htmlFor="name" className="label-style">Product Name (e.g., "Soda")</label><input id="name" type="text" required className="input-field" value={name} onChange={(e) => setName(e.target.value)} disabled={isProcessing}/></div>
             <div><label htmlFor="category" className="label-style">Category (Opt)</label><input id="category" type="text" className="input-field" value={category} onChange={(e) => setCategory(e.target.value)} disabled={isProcessing}/></div>

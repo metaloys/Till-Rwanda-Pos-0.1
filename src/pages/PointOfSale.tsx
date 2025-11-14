@@ -9,6 +9,7 @@ import QuantityModal from '../components/QuantityModal';
 import { toast } from 'react-hot-toast';
 import { ConnectivityService } from '../lib/connectivityService';
 import { OfflineSalesService } from '../lib/offlineSalesService';
+import { ProductCacheService } from '../lib/productCacheService';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -46,19 +47,60 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
   const [selectedVariantForQuantity, setSelectedVariantForQuantity] = useState<ProductVariant | null>(null);
   const [showCartOnMobile, setShowCartOnMobile] = useState(false);
   const [isOnline, setIsOnline] = useState(ConnectivityService.getOnlineStatus());
+  const [cacheWarning, setCacheWarning] = useState<string | null>(null);
 
   async function fetchVariants() {
     setLoadingProducts(true);
-    const { data, error } = await supabase.from('product_variants').select('*, products(name, category, id, shop_id)').eq('products.shop_id', shopId).gt('stock_quantity', 0).order('name', { ascending: true });
-    if (error) { console.error("Error fetching items:", error.message); } 
-    else if (data) {
-        const sellableItems: ProductVariant[] = data.filter(item => item.products !== null).map(item => {
+    setCacheWarning(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('product_variants')
+        .select('*, products(name, category, id, shop_id)')
+        .eq('products.shop_id', shopId)
+        .gt('stock_quantity', 0)
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching items:", error.message);
+        // Try to load from cache on error
+        const cached = await ProductCacheService.getCachedProducts(shopId);
+        if (cached.length > 0) {
+          setCacheWarning('Showing cached products (updated 24h ago)');
+          const fallbackVariants: ProductVariant[] = cached.map(p => ({
+            id: parseInt(p.id),
+            created_at: p.cachedAt,
+            product_id: parseInt(p.id.split('-')[0]) || 1,
+            name: p.name,
+            attribute_1: p.variants[0]?.name || null,
+            attribute_2: null,
+            price: p.price,
+            stock_quantity: p.stock_quantity,
+            image_url: null,
+          }));
+          setVariants(fallbackVariants);
+        }
+      } else if (data) {
+        const sellableItems: ProductVariant[] = data
+          .filter(item => item.products !== null)
+          .map(item => {
             const productInfo = item.products as { name: string, category: string, id: number };
-            return ({ ...item, product_id: productInfo.id, name: `${productInfo.name} - ${item.name || item.attribute_1 || ''}`}) as ProductVariant;
-        });
+            return {
+              ...item,
+              product_id: productInfo.id,
+              name: `${productInfo.name} - ${item.name || item.attribute_1 || ''}`,
+            } as ProductVariant;
+          });
         setVariants(sellableItems);
+        
+        // Cache products in background
+        void ProductCacheService.cacheProducts(shopId, sellableItems);
+      }
+    } catch (error) {
+      console.error('Unexpected error fetching items:', error);
+    } finally {
+      setLoadingProducts(false);
     }
-    setLoadingProducts(false);
   }
 
   async function fetchCustomers() { 
@@ -209,6 +251,14 @@ export default function PointOfSale({ shopId, profile, userRole }: PointOfSalePr
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-9rem)] gap-4 p-4">
+      {/* Cache Warning Banner */}
+      {cacheWarning && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 flex items-center gap-2 text-amber-800 text-sm">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>{cacheWarning}</span>
+        </div>
+      )}
+
       {/* Products Section - Full width on mobile, 7/12 on desktop */}
       <div className="md:hidden flex gap-2 mb-2">
         <button 
