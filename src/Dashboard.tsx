@@ -57,7 +57,7 @@ export default function Dashboard({ profile }: DashboardProps) {
 
     switch (currentPage) {
       case 'admin_dashboard': return <SuperAdminDashboard />;
-      case 'overview': return <Overview />; 
+      case 'overview': return <Overview {...pageProps} />; 
       case 'sales_history': return <SalesHistory {...pageProps} />;
       case 'expenses': return <ExpenseTracking {...pageProps} />; 
       case 'reports': return <Reports {...pageProps} />; 
@@ -67,7 +67,7 @@ export default function Dashboard({ profile }: DashboardProps) {
       case 'credit': return <CreditManagement {...pageProps} />; 
       case 'pos': return <PointOfSale {...pageProps} />; 
       case 'staff_management': return <StaffManagement {...pageProps} />; 
-      default: return isSuperAdmin ? <SuperAdminDashboard /> : <Overview />;
+      default: return isSuperAdmin ? <SuperAdminDashboard /> : <Overview {...pageProps} />;
     }
   };
 
@@ -86,12 +86,12 @@ export default function Dashboard({ profile }: DashboardProps) {
     <button 
       onClick={() => handlePageSelect(pageName)} 
       className={`
-        w-full flex items-center rounded-md px-3 py-2 text-left text-sm font-medium transition-colors
+        w-full flex items-center rounded-lg px-3 py-2 text-left text-sm font-medium transition-all duration-200
         ${isSubItem ? 'pl-6' : ''}
         ${isPrimary 
-          ? 'text-white shadow-sm bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 dark:from-indigo-500 dark:to-blue-400 dark:hover:from-indigo-600 dark:hover:to-blue-500' 
+          ? 'text-white shadow-card bg-linear-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 hover:shadow-card-hover dark:from-brand-500 dark:to-brand-400 dark:hover:from-brand-600 dark:hover:to-brand-500 animate-fade-in' 
           : currentPage === pageName 
-          ? 'bg-indigo-100 text-indigo-700 dark:bg-slate-700 dark:text-white' 
+          ? 'bg-brand-100 text-brand-700 dark:bg-slate-700 dark:text-white shadow-sm' 
           : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100'
         }
       `}
@@ -155,7 +155,7 @@ export default function Dashboard({ profile }: DashboardProps) {
           </div>
           <p className="px-3 text-xs text-slate-400 dark:text-slate-500">Version 0.2</p>
           <p className="px-3 text-xs text-slate-400 dark:text-slate-500">© 2025 Invoza company Ltd.</p>
-        <button onClick={handleLogout} className="w-full rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 mt-2" > Log Out </button>
+        <button onClick={handleLogout} className="w-full rounded-lg bg-danger-600 px-4 py-2 text-sm font-semibold text-white shadow-card hover:shadow-card-hover hover:bg-danger-700 transition-all mt-2 animate-fade-in" > Log Out </button>
       </div>
     </>
   );

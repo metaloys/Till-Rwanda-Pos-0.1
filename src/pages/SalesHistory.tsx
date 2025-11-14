@@ -23,7 +23,7 @@ export default function SalesHistory({ shopId }: SalesHistoryProps) {
 
   async function fetchSalesHistory() {
     setLoading(true);
-    const { data, error } = await supabase.from('sales').select('*, customers ( name )').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('sales').select('*, customers ( name )').eq('shop_id', shopId).order('created_at', { ascending: false });
     if (error) { console.error('Error fetching sales:', error.message); toast.error(error.message); } 
     else if (data) { setSales(data as SaleWithCustomer[]); }
     setLoading(false);
@@ -43,14 +43,14 @@ export default function SalesHistory({ shopId }: SalesHistoryProps) {
         const stockReversals = items.map(item => supabase.rpc('update_stock', { variant_id_to_update: item.variant_id as number, quantity_change: item.quantity }));
         await Promise.all(stockReversals);
         
-        const { error: saleUpdateError } = await supabase.from('sales').update({ is_returned: true }).eq('id', saleToReturn.id);
+        const { error: saleUpdateError } = await supabase.from('sales').update({ is_returned: true }).eq('id', saleToReturn.id).eq('shop_id', shopId);
         if (saleUpdateError) throw saleUpdateError;
         
         if (saleToReturn.payment_method === 'credit' && saleToReturn.customer_id) {
-          const { data: customer, error: fetchCustError } = await supabase.from('customers').select('credit_balance').eq('id', saleToReturn.customer_id).single();
+          const { data: customer, error: fetchCustError } = await supabase.from('customers').select('credit_balance').eq('id', saleToReturn.customer_id).eq('shop_id', shopId).single();
           if (!fetchCustError && customer) {
             const newBalance = customer.credit_balance - saleToReturn.total_amount;
-            await supabase.from('customers').update({ credit_balance: newBalance }).eq('id', saleToReturn.customer_id);
+            await supabase.from('customers').update({ credit_balance: newBalance }).eq('id', saleToReturn.customer_id).eq('shop_id', shopId);
           }
         }
         resolve(`Sale ID ${saleToReturn.id} successfully returned!`);

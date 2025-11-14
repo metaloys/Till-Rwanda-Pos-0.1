@@ -49,21 +49,21 @@ export default function RecordPaymentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-md rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+      <div className="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-elevated animate-scale-in">
+        <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
           <X size={20} />
         </button>
 
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Record Payment</h2>
+        <h2 className="text-xl font-black text-slate-900 dark:text-white border-b border-success-600 pb-2">Record Payment</h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          For: <span className="font-medium text-indigo-600 dark:text-indigo-400">{customer.name}</span>
+          For: <span className="font-medium text-brand-600 dark:text-brand-400">{customer.name}</span>
         </p>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Current Balance: <span className="font-medium text-red-600 dark:text-red-500">{customer.credit_balance.toLocaleString()} RWF</span>
+          Current Balance: <span className="font-medium text-danger-600 dark:text-danger-500">{customer.credit_balance.toLocaleString()} RWF</span>
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4 animate-fade-in">
           <div>
             <label htmlFor="payment-amount" className="label-style">Payment Amount (RWF)</label>
             <input
@@ -97,7 +97,7 @@ export default function RecordPaymentModal({
 
           <button 
             type="submit" 
-            className="w-full rounded-md bg-green-600 px-4 py-3 font-semibold text-white shadow-sm hover:bg-green-700 disabled:opacity-50" 
+            className="w-full rounded-lg bg-success-600 px-4 py-3 font-semibold text-white shadow-card hover:shadow-card-hover hover:bg-success-700 transition-all disabled:opacity-50" 
             disabled={isProcessing}
           >
             {isProcessing ? 'Recording...' : 'Confirm Payment'}

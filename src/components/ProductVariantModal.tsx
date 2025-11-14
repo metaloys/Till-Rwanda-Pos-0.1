@@ -221,19 +221,19 @@ export default function ProductVariantModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="relative w-full max-w-4xl rounded-lg bg-white dark:bg-slate-800 p-4 md:p-6 shadow-xl">
-          <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300" title="Close"><X size={20} /></button>
-          <h2 className="card-header">Manage Options for: {product.name}</h2>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+        <div className="relative w-full max-w-4xl rounded-2xl bg-white dark:bg-slate-800 p-4 md:p-6 shadow-elevated animate-scale-in">
+          <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors" title="Close"><X size={20} /></button>
+          <h2 className="card-header border-b border-brand-600 pb-2">Manage Options for: {product.name}</h2>
           <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">Add options like "500ml", "1kg", or "Red, Large". Each has its own price and stock.</p>
           
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div id="variant-form" className="lg:col-span-1 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 p-4">
+            <div id="variant-form" className="lg:col-span-1 rounded-2xl border border-dashed border-brand-300 dark:border-brand-700 bg-brand-50/30 dark:bg-brand-900/10 p-4">
               <h3 className="card-header mb-3 flex justify-between items-center">
                   {editingVariant ? 'Edit Option' : 'Add New Option'}
-                  {editingVariant && (<button type="button" onClick={resetFormState} className="text-sm text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-500 flex items-center" disabled={isProcessing}><XCircle className="h-4 w-4 mr-1" /> Cancel</button>)}
+                  {editingVariant && (<button type="button" onClick={resetFormState} className="text-sm text-slate-500 hover:text-danger-500 dark:text-slate-400 dark:hover:text-danger-500 flex items-center transition-colors" disabled={isProcessing}><XCircle className="h-4 w-4 mr-1" /> Cancel</button>)}
               </h3>
-              <form onSubmit={handleFormSubmit} className="space-y-3">
+              <form onSubmit={handleFormSubmit} className="space-y-3 animate-fade-in">
                 <div><label htmlFor="name" className="label-style">Option Name (e.g., "500ml", "1kg")</label><input id="name" type="text" required className="input-field" value={name} onChange={(e) => setName(e.target.value)} disabled={isProcessing} /></div>
                 
                 <div className="grid grid-cols-2 gap-2">
@@ -244,36 +244,36 @@ export default function ProductVariantModal({
                     <label htmlFor="image-upload" className="label-style flex items-center"><Upload className="mr-2 h-4 w-4" /> Option Image (Opt)</label>
                     {currentImageUrl && !imageFile && ( <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-2"> <img src={currentImageUrl} alt="Current" className="h-8 w-8 rounded object-cover" /> <span>Image set.</span> </div> )}
                     {currentImageUrl && imageFile && ( <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-2"> <img src={currentImageUrl} alt="New Preview" className="h-8 w-8 rounded object-cover" /> <span>New image selected.</span> </div> )}
-                    <input id="image-upload" type="file" accept="image/*" ref={fileInputRef} className="input-field file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-700 dark:file:text-slate-300 dark:hover:file:bg-slate-600" onChange={handleFileChange} disabled={isProcessing} />
+                    <input id="image-upload" type="file" accept="image/*" ref={fileInputRef} className="input-field file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-brand-100 file:text-brand-700 hover:file:bg-brand-200 dark:file:bg-brand-900/30 dark:file:text-brand-300 dark:hover:file:bg-brand-900/50" onChange={handleFileChange} disabled={isProcessing} />
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Image will be compressed to ~150KB.</p>
                   </div>
-                <button type="submit" disabled={isProcessing || !price || !stock || !name} className="w-full rounded-md bg-green-600 px-4 py-2 font-semibold text-white shadow-sm hover:bg-green-700 disabled:opacity-50">
+                <button type="submit" disabled={isProcessing || !price || !stock || !name} className="w-full rounded-lg bg-success-600 px-4 py-2 font-semibold text-white shadow-card hover:shadow-card-hover hover:bg-success-700 transition-all disabled:opacity-50">
                   {isProcessing ? 'Saving...' : editingVariant ? 'Save Changes' : 'Create Option'}
                 </button>
               </form>
             </div>
 
             <div className="lg:col-span-2">
-              <h3 className="card-header mb-3">Current Options ({variants.length})</h3>
-              {loading ? (<div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-indigo-500" /></div>) : 
+              <h3 className="card-header mb-3 border-b border-brand-600 pb-2">Current Options ({variants.length})</h3>
+              {loading ? (<div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-brand-500" /></div>) : 
               variants.length === 0 ? (<p className="text-slate-500 dark:text-slate-400">No options defined.</p>) : (
                   <>
                     <div className="hidden md:block flow-root overflow-x-auto">
                       <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                          <thead className="bg-slate-50 dark:bg-slate-700">
-                              <tr><th className="th-style">Image</th><th className="th-style">Option Name</th><th className="th-style">Price</th><th className="th-style">Stock</th><th className="th-style text-right">Actions</th></tr>
+                          <thead className="bg-brand-50 dark:bg-slate-700/50">
+                              <tr><th className="th-style text-brand-700 dark:text-brand-300">Image</th><th className="th-style text-brand-700 dark:text-brand-300">Option Name</th><th className="th-style text-brand-700 dark:text-brand-300">Price</th><th className="th-style text-brand-700 dark:text-brand-300">Stock</th><th className="th-style text-right text-brand-700 dark:text-brand-300">Actions</th></tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
                               {variants.map((variant) => (
-                                  <tr key={variant.id}>
-                                      <td className="td-style">{variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-10 w-10 rounded object-cover" /> ) : ( <div className="h-10 w-10 rounded bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-400">No Img</div> )}</td>
+                                  <tr key={variant.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                                      <td className="td-style">{variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-10 w-10 rounded-lg object-cover" /> ) : ( <div className="h-10 w-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-400">No Img</div> )}</td>
                                       <td className="td-style font-medium text-slate-900 dark:text-white">{variant.name}</td>
                                       <td className="td-style text-slate-600 dark:text-slate-300">{variant.price.toLocaleString()} RWF</td>
-                                      <td className={`td-style font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600 dark:text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>{variant.stock_quantity}</td>
+                                      <td className={`td-style font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-danger-600 dark:text-danger-500' : 'text-slate-700 dark:text-slate-300'}`}>{variant.stock_quantity}</td>
                                       <td className="td-style text-right whitespace-nowrap">
-                                          <button onClick={() => handleOpenRestockModal(variant)} disabled={isProcessing} className="action-button bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900"><PlusCircle className="h-4 w-4" /></button>
-                                          <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-900 ml-2"><Edit className="h-4 w-4" /></button>
-                                          <button onClick={() => openDeleteModal(variant)} disabled={isProcessing} className="action-button bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900 ml-2"><Trash2 className="h-4 w-4" /></button>
+                                          <button onClick={() => handleOpenRestockModal(variant)} disabled={isProcessing} className="action-button bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-300 dark:hover:bg-success-900 hover:shadow-card transition-all"><PlusCircle className="h-4 w-4" /></button>
+                                          <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button bg-warning-100 text-warning-700 dark:bg-warning-900/50 dark:text-warning-300 dark:hover:bg-warning-900 ml-2 hover:shadow-card transition-all"><Edit className="h-4 w-4" /></button>
+                                          <button onClick={() => openDeleteModal(variant)} disabled={isProcessing} className="action-button bg-danger-100 text-danger-700 dark:bg-danger-900/50 dark:text-danger-300 dark:hover:bg-danger-900 ml-2 hover:shadow-card transition-all"><Trash2 className="h-4 w-4" /></button>
                                       </td>
                                   </tr>
                               ))}
@@ -282,19 +282,19 @@ export default function ProductVariantModal({
                     </div>
                     <div className="space-y-4 md:hidden">
                       {variants.map((variant) => (
-                          <div key={variant.id} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm">
+                          <div key={variant.id} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-card hover:shadow-card-hover transition-all">
                               <div className="flex items-start space-x-4">
-                                  {variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-16 w-16 rounded object-cover" /> ) : ( <div className="h-16 w-16 rounded bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-400">No Img</div> )}
+                                  {variant.image_url ? ( <img src={variant.image_url} alt={variant.name || 'Variant'} className="h-16 w-16 rounded-lg object-cover" /> ) : ( <div className="h-16 w-16 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-400">No Img</div> )}
                                   <div className="flex-1">
                                       <p className="font-bold text-slate-900 dark:text-white">{variant.name}</p>
                                       <p className="text-sm text-slate-700 dark:text-slate-300">{variant.price.toLocaleString()} RWF</p>
-                                      <p className={`text-sm font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-red-600 dark:text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>Stock: {variant.stock_quantity}</p>
+                                      <p className={`text-sm font-semibold ${variant.stock_quantity <= LOW_STOCK_THRESHOLD ? 'text-danger-600 dark:text-danger-500' : 'text-slate-700 dark:text-slate-300'}`}>Stock: {variant.stock_quantity}</p>
                                   </div>
                               </div>
                               <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-200 dark:border-slate-700 pt-3">
-                                  <button onClick={() => handleOpenRestockModal(variant)} disabled={isProcessing} className="action-button justify-center bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900"><PlusCircle className="mr-1.5 h-4 w-4" /> Restock</button>
-                                  <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button justify-center bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-900"><Edit className="mr-1.5 h-4 w-4" /> Edit</button>
-                                  <button onClick={() => openDeleteModal(variant)} disabled={isProcessing} className="action-button justify-center bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900"><Trash2 className="mr-1.5 h-4 w-4" /> Delete</button>
+                                  <button onClick={() => handleOpenRestockModal(variant)} disabled={isProcessing} className="action-button justify-center bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-300 dark:hover:bg-success-900 hover:shadow-card transition-all"><PlusCircle className="mr-1.5 h-4 w-4" /> Restock</button>
+                                  <button onClick={() => startEditing(variant)} disabled={isProcessing} className="action-button justify-center bg-warning-100 text-warning-700 dark:bg-warning-900/50 dark:text-warning-300 dark:hover:bg-warning-900 hover:shadow-card transition-all"><Edit className="mr-1.5 h-4 w-4" /> Edit</button>
+                                  <button onClick={() => openDeleteModal(variant)} disabled={isProcessing} className="action-button justify-center bg-danger-100 text-danger-700 dark:bg-danger-900/50 dark:text-danger-300 dark:hover:bg-danger-900 hover:shadow-card transition-all"><Trash2 className="mr-1.5 h-4 w-4" /> Delete</button>
                               </div>
                           </div>
                       ))}
@@ -303,7 +303,7 @@ export default function ProductVariantModal({
               )}
             </div>
           </div>
-          <div className="mt-6 text-right"><button onClick={onClose} className="rounded-md bg-slate-200 dark:bg-slate-600 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-300 dark:hover:bg-slate-500">Done</button></div>
+          <div className="mt-6 text-right"><button onClick={onClose} className="rounded-lg bg-slate-200 dark:bg-slate-600 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-card hover:shadow-sm hover:bg-slate-300 dark:hover:bg-slate-500 transition-all">Done</button></div>
         </div>
       </div>
       

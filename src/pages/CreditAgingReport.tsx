@@ -19,13 +19,13 @@ export default function CreditAgingReport({ shopId }: CreditAgingReportProps) {
 
   async function fetchCreditReport() { 
     setLoading(true); 
-    const { data: debtors, error: debtorsError } = await supabase.from('customers').select('*').gt('credit_balance', 0).order('name', { ascending: true }); 
+    const { data: debtors, error: debtorsError } = await supabase.from('customers').select('*').eq('shop_id', shopId).gt('credit_balance', 0).order('name', { ascending: true }); 
     if (debtorsError) { console.error('Error fetching debtors:', debtorsError.message); alert(debtorsError.message); setLoading(false); return; } 
     if (!debtors || debtors.length === 0) { setDebtorReport([]); setLoading(false); return; } 
     
     const reportData: DebtorInfo[] = []; 
     for (const customer of debtors) { 
-      const { data: lastSaleData, error: lastSaleError } = await supabase.from('sales').select('created_at').eq('customer_id', customer.id).eq('payment_method', 'credit').order('created_at', { ascending: false }).limit(1).single(); 
+      const { data: lastSaleData, error: lastSaleError } = await supabase.from('sales').select('created_at').eq('customer_id', customer.id).eq('shop_id', shopId).eq('payment_method', 'credit').order('created_at', { ascending: false }).limit(1).single(); 
       if (lastSaleError && lastSaleError.code !== 'PGRST116') { console.error(`Error fetching last sale for ${customer.id}:`, lastSaleError.message); reportData.push({ ...customer, last_credit_sale_date: null }); } 
       else { reportData.push({ ...customer, last_credit_sale_date: lastSaleData?.created_at ?? null }); } 
     } 

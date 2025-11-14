@@ -29,7 +29,7 @@ export default function ExpenseTracking({ shopId, profile, userRole }: ExpenseTr
   const [recurrenceInterval, setRecurrenceInterval] = useState('');
   const [nextDueDate, setNextDueDate] = useState('');
 
-  async function fetchExpenses() { setLoading(true); const { data, error } = await supabase.from('expenses').select('*').order('expense_date', { ascending: false }).order('created_at', { ascending: false }); if (error) { console.error('Error fetching expenses:', error.message); alert(error.message); } else if (data) { setExpenses(data as Expense[]); } setLoading(false); }
+  async function fetchExpenses() { setLoading(true); const { data, error } = await supabase.from('expenses').select('*').eq('shop_id', shopId).order('expense_date', { ascending: false }).order('created_at', { ascending: false }); if (error) { console.error('Error fetching expenses:', error.message); alert(error.message); } else if (data) { setExpenses(data as Expense[]); } setLoading(false); }
   useEffect(() => { if(shopId) fetchExpenses(); }, [shopId]);
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files.length > 0) { setReceiptFile(e.target.files[0]); } else { setReceiptFile(null); } };
 

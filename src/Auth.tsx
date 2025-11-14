@@ -89,9 +89,9 @@ export default function Auth() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
       <div className="w-full max-w-md">
-        <div className="rounded-lg bg-white p-8 shadow-xl dark:bg-slate-800">
+        <div className="rounded-2xl bg-white p-8 shadow-elevated dark:bg-slate-800 animate-scale-in">
           <div className="flex justify-center items-center mb-6 space-x-2">
-              <Building className="h-8 w-8 text-indigo-600" />
+              <Building className="h-8 w-8 text-brand-600" />
               <h1 className="text-center text-3xl font-bold text-slate-900 dark:text-white">
                 TillRwanda PoS
               </h1>
@@ -101,39 +101,37 @@ export default function Auth() {
             <form className="space-y-6" onSubmit={handleLogin}>
               {commonForm}
               <div className="text-right text-sm">
-                  {/* --- 4. FIX THE TYPO: type.="button" -> type="button" --- */}
-                  <button type="button" onClick={handlePasswordReset} className="font-medium text-indigo-600 hover:text-indigo-500">
+                  <button type="button" onClick={handlePasswordReset} className="font-medium text-brand-600 hover:text-brand-700 transition-colors">
                       Forgot your password?
                   </button>
-                  {/* --- END 4 --- */}
               </div>
               <div className="flex items-center space-x-4">
-                <button type="submit" disabled={loading} className="flex-1 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50">
+                <button type="submit" disabled={loading} className="flex-1 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-card hover:shadow-card-hover hover:bg-brand-700 disabled:opacity-50 transition-all animate-fade-in">
                   {loading ? 'Logging In...' : 'Log In'}
                 </button>
               </div>
               <p className="text-center text-sm text-slate-600 dark:text-slate-400">
                   New business owner?{' '}
-                  <button type="button" onClick={() => setIsNewUser(true)} className="font-medium text-indigo-600 hover:text-indigo-500">
+                  <button type="button" onClick={() => setIsNewUser(true)} className="font-medium text-brand-600 hover:text-brand-700 transition-colors">
                       Register Your Shop
                   </button>
               </p>
             </form>
           ) : (
             <form className="space-y-6" onSubmit={handleOwnerSignUp}>
-              <div className="rounded-md bg-yellow-50 p-3 flex items-center space-x-2 border border-yellow-300">
-                  <Store className='h-5 w-5 text-yellow-600' />
-                  <p className='text-sm font-medium text-yellow-800'>Registering a New Business Owner Account.</p>
+              <div className="rounded-lg bg-warning-50 p-3 flex items-center space-x-2 border border-warning-200 animate-slide-down">
+                  <Store className='h-5 w-5 text-warning-600' />
+                  <p className='text-sm font-medium text-warning-800 dark:text-warning-700'>Registering a New Business Owner Account.</p>
               </div>
               <div><label htmlFor="shop-name" className="label-style">Business Name</label><input id="shop-name" type="text" required className="input-field" placeholder="e.g., Judith's Grocery Store" value={shopName} onChange={(e) => setShopName(e.target.value)} /></div>
               {commonForm}
               <div className="flex items-center space-x-4">
-                <button type="submit" disabled={loading || !shopName} className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700 disabled:opacity-50">
+                <button type="submit" disabled={loading || !shopName} className="flex-1 rounded-lg bg-success-600 px-4 py-2 text-sm font-semibold text-white shadow-card hover:shadow-card-hover hover:bg-success-700 disabled:opacity-50 transition-all animate-fade-in">
                   {loading ? 'Provisioning Shop...' : 'Create Owner Account'}
                 </button>
               </div>
               <p className="text-center text-sm text-slate-600 dark:text-slate-400">
-                  <button type="button" onClick={() => setIsNewUser(false)} className="font-medium text-indigo-600 hover:text-indigo-500">
+                  <button type="button" onClick={() => setIsNewUser(false)} className="font-medium text-brand-600 hover:text-brand-700 transition-colors">
                       Back to Log In
                   </button>
               </p>

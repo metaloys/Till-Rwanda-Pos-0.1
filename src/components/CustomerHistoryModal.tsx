@@ -21,16 +21,16 @@ export default function CustomerHistoryModal({
 
   useEffect(() => {
     if (isOpen && customer) {
-      fetchHistory(customer.id);
+      fetchHistory(customer.id, customer.shop_id);
     } else {
       setHistory([]);
     }
   }, [isOpen, customer]);
 
-  async function fetchHistory(customerId: number) {
+  async function fetchHistory(customerId: number, shopId: string) {
     setLoading(true);
-    const { data: salesData, error: salesError } = await supabase.from('sales').select('id, created_at, total_amount, payment_method').eq('customer_id', customerId).eq('payment_method', 'credit');
-    const { data: paymentsData, error: paymentsError } = await supabase.from('credit_payments').select('id, created_at, amount, payment_method');
+    const { data: salesData, error: salesError } = await supabase.from('sales').select('id, created_at, total_amount, payment_method').eq('customer_id', customerId).eq('shop_id', shopId).eq('payment_method', 'credit');
+    const { data: paymentsData, error: paymentsError } = await supabase.from('credit_payments').select('id, created_at, amount, payment_method').eq('shop_id', shopId);
     if (salesError) console.error('Error fetching sales:', salesError.message);
     if (paymentsError) console.error('Error fetching payments:', paymentsError.message);
     let combinedHistory: HistoryItem[] = [];
@@ -50,41 +50,41 @@ export default function CustomerHistoryModal({
   if (!isOpen || !customer) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"><X size={20} /></button>
-        <h2 className="mb-4 flex items-center text-xl font-bold text-gray-800"><History className="mr-2 h-5 w-5" /> Credit History for {customer.name}</h2>
-        <div className="mb-4 text-center border-b pb-4"><p className="text-sm text-gray-600">Current Balance:</p><p className="text-3xl font-extrabold text-red-600">{customer.credit_balance.toLocaleString()} RWF</p><p className="text-xs text-gray-500">Credit Limit: {customer.credit_limit > 0 ? customer.credit_limit.toLocaleString() + ' RWF' : 'No Limit'}</p></div>
-        <div className="max-h-80 overflow-y-auto border-gray-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+      <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-elevated animate-scale-in">
+        <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"><X size={20} /></button>
+        <h2 className="mb-4 flex items-center text-xl font-black text-slate-900 dark:text-white border-b border-brand-600 pb-3"><History className="mr-2 h-5 w-5 text-brand-600" /> Credit History for {customer.name}</h2>
+        <div className="mb-4 text-center border-b border-slate-200 dark:border-slate-700 pb-4"><p className="text-sm text-slate-600 dark:text-slate-400">Current Balance:</p><p className="text-3xl font-black text-danger-600 dark:text-danger-400">{customer.credit_balance.toLocaleString()} RWF</p><p className="text-xs text-slate-500 dark:text-slate-400">Credit Limit: {customer.credit_limit > 0 ? customer.credit_limit.toLocaleString() + ' RWF' : 'No Limit'}</p></div>
+        <div className="max-h-80 overflow-y-auto">
           {loading ? (
-            <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+            <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-brand-600" /></div>
           ) : history.length === 0 ? (
-            <p className="py-10 text-center text-gray-500">No credit activity found.</p>
+            <p className="py-10 text-center text-slate-500 dark:text-slate-400">No credit activity found.</p>
           ) : (
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-slate-200 dark:divide-slate-700">
               {history.map((item) => (
-                <li key={`${item.type}-${item.id}`} className="p-3 flex justify-between items-center">
+                <li key={`${item.type}-${item.id}`} className="p-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                    <div className="flex items-center space-x-3">
                        {item.type === 'sale' ? (
-                           <ArrowUpCircle className="h-5 w-5 text-red-500 flex-shrink-0" aria-label="Credit Taken" /> // FIX: Removed title prop
+                           <ArrowUpCircle className="h-5 w-5 text-danger-500 flex-shrink-0" aria-label="Credit Taken" />
                        ) : (
-                           <ArrowDownCircle className="h-5 w-5 text-green-500 flex-shrink-0" aria-label="Payment Made" /> // FIX: Removed title prop
+                           <ArrowDownCircle className="h-5 w-5 text-success-500 flex-shrink-0" aria-label="Payment Made" />
                        )}
                        <div>
-                           <p className={`font-medium ${item.type === 'sale' ? 'text-red-700' : 'text-green-700'}`}>{item.type === 'sale' ? 'Credit Sale' : 'Payment'}</p>
-                           <p className="text-xs text-gray-500 mt-0.5">{item.date.toLocaleDateString()} at {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                           <p className={`font-medium ${item.type === 'sale' ? 'text-danger-700 dark:text-danger-400' : 'text-success-700 dark:text-success-400'}`}>{item.type === 'sale' ? 'Credit Sale' : 'Payment'}</p>
+                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.date.toLocaleDateString()} at {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                        </div>
                    </div>
                    <div className="text-right">
-                        <span className={`font-bold ${item.type === 'sale' ? 'text-red-900' : 'text-green-900'}`}>{item.type === 'sale' ? '+' : '-'} {item.amount.toLocaleString()} RWF</span>
-                       <p className="text-xs text-gray-500 mt-0.5 capitalize">{item.method}</p>
+                        <span className={`font-bold ${item.type === 'sale' ? 'text-danger-600 dark:text-danger-400' : 'text-success-600 dark:text-success-400'}`}>{item.type === 'sale' ? '+' : '-'} {item.amount.toLocaleString()} RWF</span>
+                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 capitalize">{item.method}</p>
                    </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
-        <div className="mt-6 text-right"><button onClick={onClose} className="rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-300">Close</button></div>
+        <div className="mt-6 text-right"><button onClick={onClose} className="rounded-lg bg-slate-200 dark:bg-slate-600 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-card hover:shadow-sm hover:bg-slate-300 dark:hover:bg-slate-500 transition-all">Close</button></div>
       </div>
     </div>
   );

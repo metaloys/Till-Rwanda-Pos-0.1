@@ -40,8 +40,8 @@ export default function Reports({ shopId, profile, userRole }: ReportsProps) {
     const dateString = date.toISOString().split('T')[0];
 
     const [salesResult, expensesResult, topProductsResult, inventoryResult, slowProductsResult, staffSalesResult] = await Promise.all([
-        supabase.from('sales').select('total_amount', { count: 'exact' }).gte('created_at', startISO).lte('created_at', endISO).neq('is_returned', true),
-        supabase.from('expenses').select('amount').eq('expense_date', dateString),
+        supabase.from('sales').select('total_amount', { count: 'exact' }).eq('shop_id', shopId).gte('created_at', startISO).lte('created_at', endISO).neq('is_returned', true),
+        supabase.from('expenses').select('amount').eq('shop_id', shopId).eq('expense_date', dateString),
         supabase.rpc('get_top_selling_products', { p_shop_id: shopId }),
         supabase.rpc('get_inventory_valuation', { p_shop_id: shopId }),
         supabase.rpc('get_slow_moving_inventory', { p_shop_id: shopId, days_limit: 90 }),

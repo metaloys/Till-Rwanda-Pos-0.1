@@ -11,11 +11,11 @@ interface MethodDetail {
 }
 
 const methodDetails: Record<string, MethodDetail> = {
-  cash: { icon: <DollarSign />, color: 'text-green-600', prompt: 'Amount Received (RWF)' },
-  mtn_momo: { icon: <Smartphone />, color: 'text-yellow-600', prompt: 'Enter MTN MoMo Transaction ID (Optional):' },
-  airtel_money: { icon: <Smartphone />, color: 'text-red-600', prompt: 'Enter Airtel Money Transaction ID (Optional):' },
-  bank_transfer: { icon: <Landmark />, color: 'text-blue-600', prompt: 'Enter Bank Transfer Reference (Optional):' },
-  credit: { icon: <X />, color: 'text-gray-500', prompt: 'Credit is handled by the "Pay Later" button.' },
+  cash: { icon: <DollarSign />, color: 'text-success-600', prompt: 'Amount Received (RWF)' },
+  mtn_momo: { icon: <Smartphone />, color: 'text-warning-600', prompt: 'Enter MTN MoMo Transaction ID (Optional):' },
+  airtel_money: { icon: <Smartphone />, color: 'text-danger-600', prompt: 'Enter Airtel Money Transaction ID (Optional):' },
+  bank_transfer: { icon: <Landmark />, color: 'text-brand-600', prompt: 'Enter Bank Transfer Reference (Optional):' },
+  credit: { icon: <X />, color: 'text-slate-500', prompt: 'Credit is handled by the "Pay Later" button.' },
 };
 
 interface PaymentModalProps {
@@ -80,25 +80,25 @@ export default function PaymentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+      <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-elevated animate-scale-in">
+        <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
           <X size={20} />
         </button>
 
         <div className="mb-4 text-center">
           <div className="flex items-center justify-center space-x-2">
             <span className={`h-6 w-6 ${currentMethod.color}`}>{currentMethod.icon}</span>
-            <h2 className="text-xl font-bold text-gray-800">{methodLabel} PAYMENT</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{methodLabel} PAYMENT</h2>
           </div>
         </div>
 
-        <div className="mb-4 border-b border-gray-200 pb-4 text-center">
-          <p className="text-sm text-gray-500">Total Due:</p>
-          <p className="text-3xl font-extrabold text-red-600">{total.toLocaleString()} RWF</p>
+        <div className="mb-4 border-b border-slate-200 dark:border-slate-700 pb-4 text-center">
+          <p className="text-sm text-slate-500 dark:text-slate-400">Total Due:</p>
+          <p className="text-3xl font-black text-brand-600 dark:text-brand-400">{total.toLocaleString()} RWF</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
           {/* Cash Payment Fields */}
           {paymentMethod === 'cash' && (
             <div className='space-y-4'>
@@ -110,9 +110,9 @@ export default function PaymentModal({
                         value={amountReceived} onChange={handleCashReceivedChange}
                     />
                 </div>
-                <div className="flex justify-between rounded-lg bg-gray-100 p-3">
-                    <span className="font-medium text-gray-700">Change Due:</span>
-                    <span className="text-xl font-bold text-green-600">
+                <div className="flex justify-between rounded-lg bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-700 p-3">
+                    <span className="font-medium text-success-700 dark:text-success-300">Change Due:</span>
+                    <span className="text-xl font-black text-success-600 dark:text-success-400">
                         {changeDue || '0'} RWF
                     </span>
                 </div>
@@ -130,11 +130,11 @@ export default function PaymentModal({
                 onChange={(e) => setTransactionRef(e.target.value)}
                 autoFocus
               />
-              <p className="mt-1 text-xs text-gray-500">Ensure payment is physically confirmed first.</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Ensure payment is physically confirmed first.</p>
             </div>
           )}
 
-          <button type="submit" className="w-full rounded-md bg-green-600 px-4 py-3 font-semibold text-white shadow-sm hover:bg-green-700 disabled:opacity-50" disabled={total === 0 || isProcessing}>
+          <button type="submit" className="w-full rounded-lg bg-success-600 px-4 py-3 font-semibold text-white shadow-card hover:shadow-card-hover hover:bg-success-700 transition-all disabled:opacity-50" disabled={total === 0 || isProcessing}>
             {isProcessing ? 'Processing...' : `Confirm ${methodLabel} Sale`}
           </button>
         </form>

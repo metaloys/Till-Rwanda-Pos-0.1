@@ -67,43 +67,43 @@ export default function SaleDetailsModal({ isOpen, onClose, saleId }: SaleDetail
   }, 0) ?? 0;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-      <div className={`relative w-full max-w-lg rounded-lg bg-white dark:bg-slate-800 shadow-xl transition-all ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} onClick={e => e.stopPropagation()}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-opacity animate-fade-in ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`relative w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 shadow-elevated transition-all animate-scale-in ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} onClick={e => e.stopPropagation()}>
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 rounded-full"
+          className="absolute top-3 right-3 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full transition-colors"
         >
           <X size={20} />
         </button>
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+            <Loader2 className="h-12 w-12 animate-spin text-brand-600" />
           </div>
         ) : !sale ? (
           <div className="p-6 text-center">
-            <p className="text-lg font-medium text-red-600 dark:text-red-500">Sale Details Not Found</p>
+            <p className="text-lg font-medium text-danger-600 dark:text-danger-500">Sale Details Not Found</p>
           </div>
         ) : (
           <div className="p-6">
-            <h2 className="mb-4 text-center text-xl font-bold text-slate-900 dark:text-white">
+            <h2 className="mb-4 text-center text-xl font-black text-slate-900 dark:text-white border-b border-brand-600 pb-3">
               Sale Details (ID: #{sale.id})
             </h2>
             
             <div className="mb-4 border-b border-slate-200 dark:border-slate-700 pb-4 text-sm text-slate-600 dark:text-slate-400 space-y-2">
-              <div className="flex items-center"><Calendar className="mr-2 h-4 w-4" /> Date: {new Date(sale.created_at as string).toLocaleString()}</div>
-              <div className="flex items-center"><User className="mr-2 h-4 w-4" /> Customer: {sale.customers?.name ?? 'Walk-in'}</div>
-              <div className="flex items-center"><Tag className="mr-2 h-4 w-4" /> Method: {formatPaymentMethod(sale.payment_method)}</div>
+              <div className="flex items-center"><Calendar className="mr-2 h-4 w-4 text-brand-500" /> Date: {new Date(sale.created_at as string).toLocaleString()}</div>
+              <div className="flex items-center"><User className="mr-2 h-4 w-4 text-brand-500" /> Customer: {sale.customers?.name ?? 'Walk-in'}</div>
+              <div className="flex items-center"><Tag className="mr-2 h-4 w-4 text-brand-500" /> Method: {formatPaymentMethod(sale.payment_method)}</div>
               {sale.transaction_reference && (
-                <div className="flex items-center"><Tag className="mr-2 h-4 w-4" /> Ref: {sale.transaction_reference}</div>
+                <div className="flex items-center"><Tag className="mr-2 h-4 w-4 text-brand-500" /> Ref: {sale.transaction_reference}</div>
               )}
             </div>
 
             <div className="mb-4 max-h-48 space-y-2 overflow-y-auto p-1">
               {sale.sale_items.map((item) => (
-                <div key={item.id} className="flex justify-between p-2 rounded-md bg-slate-50 dark:bg-slate-700/50">
+                <div key={item.id} className="flex justify-between p-2 rounded-lg bg-brand-50/30 dark:bg-brand-900/10 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors">
                   <div className="flex items-center space-x-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 dark:bg-slate-600 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900/50 text-xs font-semibold text-brand-700 dark:text-brand-300">
                       {item.quantity}x
                     </span>
                     <div>
@@ -114,7 +114,7 @@ export default function SaleDetailsModal({ isOpen, onClose, saleId }: SaleDetail
                   <div className="text-right">
                     <p className="font-medium text-slate-800 dark:text-slate-200">{(item.price_at_sale * (1 - item.discount_percentage / 100) * item.quantity).toLocaleString()} RWF</p>
                     {item.discount_percentage > 0 && (
-                      <p className="text-xs text-red-600 dark:text-red-500 line-through">{(item.price_at_sale * item.quantity).toLocaleString()} RWF</p>
+                      <p className="text-xs text-danger-600 dark:text-danger-500 line-through">{(item.price_at_sale * item.quantity).toLocaleString()} RWF</p>
                     )}
                   </div>
                 </div>
@@ -127,14 +127,14 @@ export default function SaleDetailsModal({ isOpen, onClose, saleId }: SaleDetail
                 <span>{subtotal.toLocaleString()} RWF</span>
               </div>
               {discountAmount > 0 && (
-                <div className="flex justify-between text-sm font-medium text-red-600 dark:text-red-500">
+                <div className="flex justify-between text-sm font-medium text-danger-600 dark:text-danger-500">
                   <span>Discount:</span>
                   <span>-{discountAmount.toLocaleString()} RWF</span>
                 </div>
               )}
-              <div className="mt-2 flex justify-between text-xl font-bold text-slate-900 dark:text-white border-t border-slate-200 dark:border-slate-700 pt-2">
+              <div className="mt-2 flex justify-between text-xl font-black text-slate-900 dark:text-white border-t border-slate-200 dark:border-slate-700 pt-2 bg-brand-50 dark:bg-brand-900/20 px-2 py-2 rounded-lg">
                 <span>TOTAL:</span>
-                <span>{sale.total_amount.toLocaleString()} RWF</span>
+                <span className="text-brand-600 dark:text-brand-400">{sale.total_amount.toLocaleString()} RWF</span>
               </div>
             </div>
 

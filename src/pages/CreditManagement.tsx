@@ -22,7 +22,7 @@ export default function CreditManagement({ shopId }: CreditManagementProps) {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
-  async function fetchDebtors() { setLoading(true); const { data, error } = await supabase.from('customers').select('*').gt('credit_balance', 0).order('name', { ascending: true }); if (error) { console.error('Error fetching debtors:', error.message); toast.error(error.message); } else if (data) { setDebtors(data as Customer[]); } setLoading(false); }
+  async function fetchDebtors() { setLoading(true); const { data, error } = await supabase.from('customers').select('*').eq('shop_id', shopId).gt('credit_balance', 0).order('name', { ascending: true }); if (error) { console.error('Error fetching debtors:', error.message); toast.error(error.message); } else if (data) { setDebtors(data as Customer[]); } setLoading(false); }
   useEffect(() => { if(shopId) fetchDebtors(); }, [shopId]);
 
   const handleOpenPaymentModal = (customer: Customer) => {

@@ -40,18 +40,18 @@ export default function ApplyDiscountModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-sm rounded-lg bg-white dark:bg-slate-800 p-6 shadow-xl">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+      <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-elevated animate-scale-in">
+        <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
           <X size={20} />
         </button>
 
-        <h2 className="mb-4 flex items-center text-xl font-bold text-slate-900 dark:text-white">
-          <Tag className="mr-2 h-5 w-5 text-indigo-600" />
+        <h2 className="mb-4 flex items-center text-xl font-black text-slate-900 dark:text-white border-b border-warning-600 pb-3">
+          <Tag className="mr-2 h-5 w-5 text-warning-600" />
           Apply Cart Discount
         </h2>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
           <div>
             <label htmlFor="discount-percent" className="label-style">Discount Percentage (%)</label>
             <div className="relative mt-1">
@@ -73,7 +73,7 @@ export default function ApplyDiscountModal({
           
           <button 
             type="submit" 
-            className="w-full rounded-md bg-indigo-600 px-4 py-3 font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50" 
+            className="w-full rounded-lg bg-warning-600 px-4 py-3 font-semibold text-white shadow-card hover:shadow-card-hover hover:bg-warning-700 transition-all disabled:opacity-50" 
             disabled={isProcessing}
           >
             {isProcessing ? 'Applying...' : 'Apply Discount'}
