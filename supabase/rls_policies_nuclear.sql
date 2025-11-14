@@ -71,18 +71,20 @@ ON public.profiles FOR UPDATE
 USING (auth.uid() = id);
 
 -- SHOPS
-CREATE POLICY "Users can view their shops"
+CREATE POLICY "Super admins can view all shops, users view their own"
 ON public.shops FOR SELECT
 USING (
-  id IN (
+  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
+  OR id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
 );
 
-CREATE POLICY "Users can update their shops"
+CREATE POLICY "Super admins can update all shops, users update their own"
 ON public.shops FOR UPDATE
 USING (
-  id IN (
+  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
+  OR id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
 );
