@@ -1,8 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, BarChart3, LogOut, Settings, DollarSign } from 'lucide-react';
-// FIX: Path corrected to go up one level (out of 'components/') to find the file in 'src/'
-import { supabase } from '../supabaseClient'; 
+import { LayoutDashboard, Package, BarChart3, LogOut, Settings, DollarSign } from 'lucide-react'; 
 // Assuming your App.tsx passes profile and signout logic down through AppLayout props
 
 interface AppLayoutProps {
@@ -28,7 +25,6 @@ const NavItem: React.FC<{ to: string, icon: React.ReactNode, label: string, acti
 );
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children, userRole, onSignOut, profileName }) => {
-    const location = useLocation();
     
     // Define the primary navigation based on role
     const navItems = [
@@ -60,7 +56,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, userRole, onSignOut, pr
                                 to={item.to}
                                 label={item.label}
                                 icon={item.icon}
-                                active={location.pathname} // Changed to location.pathname for better active styling
+                                active=""
                                 onClick={() => {/* App.tsx handles navigation via its own state */}}
                             />
                         ))}
@@ -69,15 +65,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, userRole, onSignOut, pr
                 {/* Footer/Logout */}
                 <div className="absolute bottom-4 w-56">
                     <button 
-                        onClick={onSignOut} // Use the prop
+                        onClick={onSignOut}
                         className="flex w-full items-center justify-center space-x-3 rounded-lg p-3 text-danger-600 bg-danger-50 dark:bg-danger-900/30 hover:bg-danger-100 dark:hover:bg-danger-900 transition-colors"
                     >
                         <LogOut className="h-5 w-5" />
                         <span className="font-medium">Log Out</span>
                     </button>
-                    <Link to="/settings" className="mt-2 text-xs text-slate-500 dark:text-slate-400 block text-center hover:text-brand-600">
+                    <button className="mt-2 text-xs text-slate-500 dark:text-slate-400 block text-center hover:text-brand-600 w-full">
                         <Settings className='h-4 w-4 inline mr-1' /> Settings
-                    </Link>
+                    </button>
                 </div>
 
             </aside>

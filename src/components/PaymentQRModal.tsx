@@ -23,8 +23,7 @@ export default function PaymentQRModal({
 }: PaymentQRModalProps) {
   
   const [isLoadingQR, setIsLoadingQR] = useState(true);
-  const [qrImage, setQrImage] = useState<string | null>(null);
-  const [txRef, setTxRef] = useState<string | null>(null); // Transaction reference
+  const [qrImage, setQrImage] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (isOpen && totalAmount > 0) {
@@ -32,8 +31,7 @@ export default function PaymentQRModal({
     } else {
       // Reset when closed
       setIsLoadingQR(true);
-      setQrImage(null);
-      setTxRef(null);
+      setQrImage(undefined);
     }
   }, [isOpen, totalAmount]);
 
@@ -51,12 +49,12 @@ export default function PaymentQRModal({
       if (error) throw new Error(error.message);
       if (data.error) throw new Error(data.error);
 
-      // Save the QR image (Base64) and the transaction reference
+      // Save the QR image (Base64)
       setQrImage(data.meta.authorization.qr_image);
-      setTxRef(data.data.tx_ref);
       
-    } catch (error: any) {
-      toast.error(`Could not generate QR Code: ${error.message}`);
+    } catch (error: Error | unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Could not generate QR Code: ${errorMessage}`);
       onClose(); // Close the modal if it fails
     } finally {
       setIsLoadingQR(false);
