@@ -1,7 +1,10 @@
 # 🔒 Deploying RLS Policies - Quick Guide
 
-## ✅ Fixed Issue
-The RLS policies file had references to a `staff` table that doesn't exist in your schema. This has been removed in commit `ed6b1ff`.
+## ✅ Fixed Issues
+- ✅ Removed non-existent `staff` table references (commit `ed6b1ff`)
+- ✅ Fixed infinite recursion in RLS policies (commit `5630319`)
+
+The RLS policies now use simplified shop_id-based filtering without recursive checks.
 
 ---
 
@@ -71,14 +74,8 @@ SELECT * FROM public.profiles;
 SELECT * FROM public.products;
 ```
 
-### As a Super Admin:
-```sql
--- Should see ALL profiles
-SELECT * FROM public.profiles;
-
--- Should see ALL products from ALL shops
-SELECT * FROM public.products;
-```
+**Note**: Super admin checks are enforced at the application level, not database level. 
+The database uses shop_id filtering for all multi-tenant isolation.
 
 ---
 
