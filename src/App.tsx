@@ -23,6 +23,8 @@ function App() {
   );
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  // NEW: Super admin can toggle between admin and normal user view
+  const [viewAs, setViewAs] = useState<'admin' | 'user'>('admin');
 
   const fetchProfile = async (userId: string) => {
     setIsLoadingProfile(true);
@@ -147,7 +149,11 @@ function App() {
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
-      <Dashboard profile={profile} />
+      <Dashboard 
+        profile={profile} 
+        viewAs={viewAs}
+        onViewAsChange={setViewAs}
+      />
     </>
   );
 }

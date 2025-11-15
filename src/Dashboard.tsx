@@ -23,22 +23,29 @@ type Page = 'overview' | 'sales_history' | 'expenses' | 'reports' | 'credit_agin
 
 interface DashboardProps {
     profile: Profile;
+    viewAs?: 'admin' | 'user';
+    onViewAsChange?: (viewAs: 'admin' | 'user') => void;
 }
 
-export default function Dashboard({ profile }: DashboardProps) {
+export default function Dashboard({ profile, viewAs = 'admin', onViewAsChange }: DashboardProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // NEW: Create effective profile based on viewAs toggle
+  const effectiveProfile = viewAs === 'user' && profile.is_super_admin
+    ? { ...profile, is_super_admin: false }
+    : profile;
+
   // --- FIX: This variable must be available to all sub-components ---
-  const isSubscriptionActive = profile.is_super_admin || profile.is_active;
+  const isSubscriptionActive = effectiveProfile.is_super_admin || effectiveProfile.is_active;
 
   const [currentPage, setCurrentPage] = useState<Page>(
-    profile.is_super_admin ? 'admin_dashboard' : 'overview'
+    effectiveProfile.is_super_admin ? 'admin_dashboard' : 'overview'
   );
 
-  const userRole: UserRole = profile.role;
-  const shopId = profile.shop_id;
-  const shopName = profile.shop_name || 'Your Shop';
-  const isSuperAdmin = profile.is_super_admin; 
+  const userRole: UserRole = effectiveProfile.role;
+  const shopId = effectiveProfile.shop_id;
+  const shopName = effectiveProfile.shop_name || 'Your Shop';
+  const isSuperAdmin = effectiveProfile.is_super_admin; 
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -47,7 +54,7 @@ export default function Dashboard({ profile }: DashboardProps) {
 
   const renderCurrentPage = () => {
     const pageProps = { 
-      profile: profile, 
+      profile: effectiveProfile, 
       shopId: shopId as string,
       userRole: userRole 
     };
@@ -115,6 +122,22 @@ export default function Dashboard({ profile }: DashboardProps) {
       <p className={`mb-4 px-3 text-xs font-semibold capitalize ${isSuperAdmin ? 'text-purple-600 dark:text-purple-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
           {isSuperAdmin ? 'PLATFORM ADMIN' : `Role: ${userRole}`} | {profile.full_name}
       </p>
+
+      {/* NEW: Super Admin Role Toggle Button */}
+      {profile.is_super_admin && (
+        <div className="px-3 mb-4">
+          <button
+            onClick={() => onViewAsChange?.(viewAs === 'admin' ? 'user' : 'admin')}
+            className={`w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+              viewAs === 'admin'
+                ? 'bg-purple-600 text-white hover:bg-purple-700'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            }`}
+          >
+            {viewAs === 'admin' ? '👤 Switch to User View' : '🔐 Switch to Admin View'}
+          </button>
+        </div>
+      )}
 
       {isSubscriptionActive ? (
         <nav className="flex-1 space-y-1">
