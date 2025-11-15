@@ -90,10 +90,11 @@ USING (
 );
 
 -- PRODUCTS
-CREATE POLICY "Users can view products from their shop"
+CREATE POLICY "Super admins view all products, users view their shop's products"
 ON public.products FOR SELECT
 USING (
-  shop_id IN (
+  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
+  OR shop_id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
 );
@@ -157,10 +158,11 @@ USING (
 );
 
 -- SALES
-CREATE POLICY "Users can view sales from their shop"
+CREATE POLICY "Super admins view all sales, users view their shop's sales"
 ON public.sales FOR SELECT
 USING (
-  shop_id IN (
+  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
+  OR shop_id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
 );
@@ -205,10 +207,11 @@ WITH CHECK (
 );
 
 -- CUSTOMERS
-CREATE POLICY "Users can view customers from their shop"
+CREATE POLICY "Super admins view all customers, users view their shop's customers"
 ON public.customers FOR SELECT
 USING (
-  shop_id IN (
+  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
+  OR shop_id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
 );
@@ -253,10 +256,11 @@ WITH CHECK (
 );
 
 -- EXPENSES
-CREATE POLICY "Users can view expenses from their shop"
+CREATE POLICY "Super admins view all expenses, users view their shop's expenses"
 ON public.expenses FOR SELECT
 USING (
-  shop_id IN (
+  (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()) = true
+  OR shop_id IN (
     SELECT shop_id FROM public.profiles WHERE id = auth.uid()
   )
 );
